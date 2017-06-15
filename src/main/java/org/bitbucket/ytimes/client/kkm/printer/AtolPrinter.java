@@ -21,6 +21,12 @@ public class AtolPrinter implements Printer {
     @Value("${printer.atol.SETTING_PORT}")
     private String port;
 
+    @Value("${printer.atol.ip}")
+    private String wifiIP;
+
+    @Value("${printer.atol.port}")
+    private Integer wifiPort;
+
     @Value("${printer.atol.SETTING_VID}")
     private String vid;
 
@@ -62,6 +68,14 @@ public class AtolPrinter implements Printer {
             if (fptr.put_DeviceSingleSetting(IFptr.SETTING_PORT, port) < 0)
                 checkError(fptr);
         }
+
+        if ("TCPIP".equals(port)) {
+            if (fptr.put_DeviceSingleSetting(IFptr.SETTING_IPADDRESS, wifiIP) < 0)
+                checkError(fptr);
+            if (fptr.put_DeviceSingleSetting(IFptr.SETTING_IPPORT, wifiPort) < 0)
+                checkError(fptr);
+        }
+
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_PROTOCOL, protocol) < 0)
             checkError(fptr);
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_MODEL, model) < 0)
@@ -107,7 +121,7 @@ public class AtolPrinter implements Printer {
         // не являются ошибками, если мы хотим просто отменить чек
         try {
             if (fptr.CancelCheck() < 0)
-                checkError(fptr);
+                checkError(fptr, false);
         } catch (PrinterException e) {
             int rc = fptr.get_ResultCode();
             if (rc != -16 && rc != -3801)
@@ -116,15 +130,10 @@ public class AtolPrinter implements Printer {
     }
 
     public void reportX() throws PrinterException {
-        //TODO
+        throw new PrinterException("Операция пока не реализована");
     }
 
     public void reportZ() throws PrinterException {
-        //TODO
-        if (true) {
-            return;
-        }
-
         if (fptr.put_Mode(IFptr.MODE_REPORT_CLEAR) < 0)
             checkError(fptr);
         if (fptr.SetMode() < 0)
@@ -217,7 +226,7 @@ public class AtolPrinter implements Printer {
 
             if (r.discountPercent != null) {
                 discountType = IFptr.DISCOUNT_PERCENT;
-                discountSum = r.discountPercent > 0 ? (-1 * r.discountPercent) : r.discountPercent;
+                discountSum = r.discountPercent;
             }
 
             int tax = r.taxNumber != null ? r.taxNumber : 1;
@@ -389,6 +398,10 @@ public class AtolPrinter implements Printer {
     }
 
     private void checkError(IFptr fptr) throws PrinterException {
+        checkError(fptr, false);
+    }
+
+    private void checkError(IFptr fptr, boolean log) throws PrinterException {
         int rc = fptr.get_ResultCode();
         if (rc < 0) {
             String rd = fptr.get_ResultDescription(), bpd = null;
@@ -397,11 +410,15 @@ public class AtolPrinter implements Printer {
             }
             if (bpd != null) {
                 String message = String.format("[%d] %s (%s)", rc, rd, bpd);
-                logger.error(message);
+                if (log) {
+                    logger.error(message);
+                }
                 throw new PrinterException(message);
             } else {
                 String message = String.format("[%d] %s", rc, rd);
-                logger.error(message);
+                if (log) {
+                    logger.error(message);
+                }
                 throw new PrinterException(message);
             }
         }
