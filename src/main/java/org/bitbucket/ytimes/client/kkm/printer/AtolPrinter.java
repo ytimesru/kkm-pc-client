@@ -130,10 +130,25 @@ public class AtolPrinter implements Printer {
     }
 
     public void reportX() throws PrinterException {
-        throw new PrinterException("Операция пока не реализована");
+        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
+            checkError(fptr);
+        if (fptr.ApplySingleSettings() < 0)
+            checkError(fptr);
+        if (fptr.put_Mode(IFptr.MODE_REPORT_NO_CLEAR) < 0)
+            checkError(fptr);
+        if (fptr.SetMode() < 0)
+            checkError(fptr);
+        if (fptr.put_ReportType(IFptr.REPORT_X) < 0)
+            checkError(fptr);
+        if (fptr.Report() < 0)
+            checkError(fptr);
     }
 
     public void reportZ() throws PrinterException {
+        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
+            checkError(fptr);
+        if (fptr.ApplySingleSettings() < 0)
+            checkError(fptr);
         if (fptr.put_Mode(IFptr.MODE_REPORT_CLEAR) < 0)
             checkError(fptr);
         if (fptr.SetMode() < 0)
@@ -203,6 +218,11 @@ public class AtolPrinter implements Printer {
 
     public void printCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
+
+        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, userPassword) < 0)
+            checkError(fptr);
+        if (fptr.ApplySingleSettings() < 0)
+            checkError(fptr);
 
         cancelCheck();
 
