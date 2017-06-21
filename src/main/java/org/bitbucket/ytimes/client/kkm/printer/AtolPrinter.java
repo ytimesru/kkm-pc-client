@@ -159,47 +159,46 @@ public class AtolPrinter implements Printer {
             checkError(fptr);
     }
 
-    //для отладки
-    public void printInfo(PrintCheckCommandRecord record) throws PrinterException {
+    //выставление счета
+    public void printPredCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
-        printText("Информация об оплате");
+        printText("ПРЕДЧЕК");
+        printText("");
+        printText("ПОЗИЦИИ ОПЛАТЫ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
         for(int i = 0; i < record.itemList.size(); i++) {
             ItemRecord r = record.itemList.get(i);
-            printText((i + 1) + ". " + r.name, IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
+            printText((i + 1) + ". " + r.name, IFptr.ALIGNMENT_LEFT, IFptr.WRAP_WORD);
 
             double total = r.price * r.quantity;
             printText(r.price + " x " + r.quantity + " = " + total, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
 
-            if (r.discountSum != null) {
+            if (r.discountSum != null && r.discountSum > 0) {
                 printText("Скидка: " + r.discountSum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
             }
-            if (r.discountPercent != null) {
+            if (r.discountPercent != null && r.discountPercent > 0) {
                 printText("Скидка: " + r.discountPercent + "%", IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
             }
         }
+        printText("ИТОГО", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
+        printText("" + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
 
-        if (record.creditSum > 0) {
-            printText("По карте: " + record.creditSum);
-        }
-        if (record.moneySum > 0) {
-            printText("Наличными: " + record.moneySum);
-        }
-        if (!StringUtils.isEmpty(record.phone)) {
-            printText("Телефон: " + record.phone);
-        }
-        if (!StringUtils.isEmpty(record.email)) {
-            printText("E-mail: " + record.email);
-        }
+        printText("");
+        printText("");
+        printText("");
 
         if (GuestType.TIME.equals(record.type) && record.guestInfoList != null) {
+            printText("РАССЧИТЫВАЕМЫЕ ГОСТИ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
+            int i = 1;
             for(GuestRecord r: record.guestInfoList) {
                 String name = r.name;
                 if (!StringUtils.isEmpty(r.card)) {
                     name += " (" + r.card + ")";
                 };
-                printText(name);
-                printText(r.startTime + ", " + r.minutes + "мин.");
+                printText(i + ". " + name, IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
+                printText("время прихода:" + r.startTime, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
+                printText("время проведенное время:" + r.minutes, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
+                i++;
             }
         }
         if (GuestType.TOGO.equals(record.type)  && record.guestInfoList != null) {
@@ -372,6 +371,10 @@ public class AtolPrinter implements Printer {
     }
 
     private void printFooter() throws PrinterException {
+        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
+            checkError(fptr);
+        if (fptr.ApplySingleSettings() < 0)
+            checkError(fptr);
         if (fptr.put_Mode(IFptr.MODE_REPORT_NO_CLEAR) < 0)
             checkError(fptr);
         if (fptr.SetMode() < 0)

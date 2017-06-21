@@ -69,10 +69,10 @@ public class KKMServer extends WebSocketServer {
                 checkCode(record.code);
                 printer.printCheck(record);
             }
-            else if ("printInfo".equals(action.action)) {
+            else if ("printPredCheck".equals(action.action)) {
                 PrintCheckCommandRecord record = parseMessage(conn, action.data, PrintCheckCommandRecord.class);
                 checkCode(record.code);
-                printer.printInfo(record);
+                printer.printPredCheck(record);
             }
             else if ("reportX".equals(action.action)) {
                 ReportCommandRecord record = parseMessage(conn, action.data, ReportCommandRecord.class);
