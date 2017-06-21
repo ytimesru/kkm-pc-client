@@ -15,6 +15,7 @@ public class PrintCheckCommandRecord extends AbstractCommandRecord {
     public List<GuestRecord> guestInfoList;
     public GuestType type;
     public Boolean repeat;
+    public List<String> additionalInfo;
 
     //total sum
     public Double creditSum;

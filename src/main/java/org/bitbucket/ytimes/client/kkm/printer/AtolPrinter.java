@@ -216,6 +216,13 @@ public class AtolPrinter implements Printer {
             printText("");
         }
 
+        if (record.additionalInfo != null) {
+            for(String s: record.additionalInfo) {
+                printText(s, IFptr.ALIGNMENT_CENTER, IFptr.WRAP_WORD);
+            }
+            printText("");
+        }
+
         printFooter();
     }
 
