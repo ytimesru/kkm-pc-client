@@ -180,11 +180,8 @@ public class AtolPrinter implements Printer {
                 printText("Скидка: " + r.discountPercent + "%", IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
             }
         }
-        printText("ИТОГО", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
-        printText("" + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
+        printText("ИТОГО: " + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
 
-        printText("");
-        printText("");
         printText("");
 
         if (GuestType.TIME.equals(record.type) && record.guestInfoList != null) {
@@ -196,20 +193,27 @@ public class AtolPrinter implements Printer {
                     name += " (" + r.card + ")";
                 };
                 printText(i + ". " + name, IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
-                printText("время прихода:" + r.startTime, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
-                printText("время проведенное время:" + r.minutes, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
+                printText("время прихода: " + r.startTime, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
+                printText("проведенное время: " + r.minutes + " мин.", IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
                 i++;
             }
+
+            printText("");
+            printText("");
         }
+
         if (GuestType.TOGO.equals(record.type)  && record.guestInfoList != null) {
             for(GuestRecord r: record.guestInfoList) {
                 String name = r.name;
                 if (!StringUtils.isEmpty(r.phone)) {
                     name += ", " + r.phone;
                 }
-                printText(name);
+                printText(name, IFptr.ALIGNMENT_CENTER, IFptr.WRAP_LINE);
                 printText(r.message);
             }
+
+            printText("");
+            printText("");
         }
 
         printFooter();
@@ -341,6 +345,8 @@ public class AtolPrinter implements Printer {
         if (fptr.put_Caption(text) < 0)
             checkError(fptr);
         if (fptr.put_TextWrap(wrap) < 0)
+            checkError(fptr);
+        if (fptr.put_FontBold(false) < 0)
             checkError(fptr);
         if (fptr.put_Alignment(alignment) < 0)
             checkError(fptr);
