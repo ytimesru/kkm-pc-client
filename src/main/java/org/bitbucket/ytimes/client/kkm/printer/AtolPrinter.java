@@ -163,6 +163,8 @@ public class AtolPrinter implements Printer {
     public void printPredCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
+        printHeader();
+
         printText("ПРЕДЧЕК");
         printText("");
         printText("ПОЗИЦИИ ОПЛАТЫ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
@@ -180,9 +182,7 @@ public class AtolPrinter implements Printer {
                 printText("Скидка: " + r.discountPercent + "%", IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
             }
         }
-        printText("ИТОГО: " + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
-
-        printText("");
+        printBoldText("ИТОГО: " + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
 
         if (GuestType.TIME.equals(record.type) && record.guestInfoList != null) {
             printText("РАССЧИТЫВАЕМЫЕ ГОСТИ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
@@ -383,6 +383,25 @@ public class AtolPrinter implements Printer {
             checkError(fptr);
     }
 
+    private void printBoldText(String text, int alignment, int wrap) throws PrinterException {
+        if (fptr.put_Caption(text) < 0)
+            checkError(fptr);
+        if (fptr.put_TextWrap(wrap) < 0)
+            checkError(fptr);
+        if (fptr.put_FontBold(false) < 0)
+            checkError(fptr);
+        if (fptr.put_Alignment(alignment) < 0)
+            checkError(fptr);
+        if (fptr.put_FontDblHeight(true) < 0)
+            checkError(fptr);
+        if (fptr.put_FontDblWidth(true) < 0)
+            checkError(fptr);
+        if (fptr.put_FontBold(true) < 0)
+            checkError(fptr);
+        if (fptr.PrintFormattedText() < 0)
+            checkError(fptr);
+    }
+
     private void printText(String text) throws PrinterException {
         printText(text, IFptr.ALIGNMENT_CENTER, IFptr.WRAP_LINE);
     }
@@ -417,6 +436,12 @@ public class AtolPrinter implements Printer {
         if (fptr.PrintFooter() < 0)
             checkError(fptr);
     }
+
+    private void printHeader() throws PrinterException {
+        if (fptr.PrintHeader() < 0)
+            checkError(fptr);
+    }
+
 
     private void printBarcode(int type, String barcode, double scale) throws PrinterException {
         if (fptr.put_Alignment(IFptr.ALIGNMENT_CENTER) < 0)
