@@ -129,7 +129,7 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    public void reportX() throws PrinterException {
+    synchronized public void reportX() throws PrinterException {
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
             checkError(fptr);
         if (fptr.ApplySingleSettings() < 0)
@@ -144,7 +144,7 @@ public class AtolPrinter implements Printer {
             checkError(fptr);
     }
 
-    public void reportZ() throws PrinterException {
+    synchronized public void reportZ() throws PrinterException {
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
             checkError(fptr);
         if (fptr.ApplySingleSettings() < 0)
@@ -160,12 +160,10 @@ public class AtolPrinter implements Printer {
     }
 
     //выставление счета
-    public void printPredCheck(PrintCheckCommandRecord record) throws PrinterException {
+    synchronized public void printPredCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
-        printHeader();
-
-        printText("ПРЕДЧЕК");
+        printText("СЧЕТ");
         printText("");
         printText("ПОЗИЦИИ ОПЛАТЫ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
         for(int i = 0; i < record.itemList.size(); i++) {
@@ -223,10 +221,10 @@ public class AtolPrinter implements Printer {
             printText("");
         }
 
-        printFooter();
+        printHeader();
     }
 
-    public void printCheck(PrintCheckCommandRecord record) throws PrinterException {
+    synchronized public void printCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, userPassword) < 0)
@@ -329,7 +327,7 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    public void printNewGuest(NewGuestCommandRecord record) throws PrinterException {
+    synchronized public void printNewGuest(NewGuestCommandRecord record) throws PrinterException {
         printText(record.name);
         printText(record.startTime);
         if (!StringUtils.isEmpty(record.barcodeNum)) {
@@ -338,6 +336,7 @@ public class AtolPrinter implements Printer {
         printText("");
         printText("");
         printText("");
+        printHeader();
     }
 
     private void registrationFZ54(String name, double price, double quantity, int discountType,
@@ -367,7 +366,6 @@ public class AtolPrinter implements Printer {
             checkError(fptr);
         if (fptr.Payment() < 0)
             checkError(fptr);
-        System.out.println(String.format("Remainder: %.2f, Change: %.2f", fptr.get_Remainder(), fptr.get_Change()));
     }
 
     private void printText(String text, int alignment, int wrap) throws PrinterException {
