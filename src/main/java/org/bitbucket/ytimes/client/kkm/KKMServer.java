@@ -59,6 +59,7 @@ public class KKMServer extends WebSocketServer {
             return;
         }
         try {
+            long start = System.currentTimeMillis();
             if ("newGuest".equals(action.action)) {
                 NewGuestCommandRecord record = parseMessage(conn, action.data, NewGuestCommandRecord.class);
                 checkCode(record.code);
@@ -87,6 +88,9 @@ public class KKMServer extends WebSocketServer {
             else {
                 sendError(conn, "kkm server", "Неизвестная команда: " + action.action);
             }
+
+            long end = System.currentTimeMillis();
+            logger.info("Time: " + (end - start) + "ms");
 
             Result result = new Result();
             result.success = true;
@@ -131,6 +135,7 @@ public class KKMServer extends WebSocketServer {
             conn.send(mapper.writeValueAsString(result));
         }
         catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
             ex.printStackTrace();
         }
     }
