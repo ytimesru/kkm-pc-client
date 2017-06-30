@@ -14,8 +14,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
 
 /**
  * Created by andrey on 27.05.17.
@@ -29,11 +33,15 @@ public class KKMServer extends WebSocketServer {
     @Value("${websocket.code}")
     private String code;
 
+    private Integer port;
+
+
     private ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     public KKMServer(@Value("${websocket.port}") int port) {
         super(new InetSocketAddress(port));
+        this.port = port;
     }
 
     public void setPrinter(Printer printer) {
@@ -150,7 +158,34 @@ public class KKMServer extends WebSocketServer {
 
     @Override
     public void onStart() {
-        logger.info("KKM server started");
+        try {
+            logger.info("KKM server started: ");
+
+            boolean hasAddress = false;
+            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+            for (NetworkInterface netint : Collections.list(nets)) {
+                Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+                for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+                    if (inetAddress.toString().startsWith("/192")) {
+                        logger.info("  Адрес устройства: " + inetAddress.toString().substring(1));
+                        hasAddress = true;
+                    }
+                    else if (inetAddress.toString().startsWith("192")) {
+                        logger.info("  Адрес устройства: " + inetAddress.toString());
+                        hasAddress = true;
+                    }
+                }
+            }
+
+            if (!hasAddress) {
+                logger.info("  Адрес устройства: неизвестно");
+            }
+            logger.info("  Открытый порт: " + port);
+            logger.info("  Код подтверждения: " + code);
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
 }

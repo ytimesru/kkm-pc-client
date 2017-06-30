@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.math.BigDecimal;
 
 /**
  * Created by root on 27.05.17.
@@ -47,6 +48,9 @@ public class AtolPrinter implements Printer {
 
     @Value("${printer.atol.SETTING_BAUDRATE}")
     private int baudrate;
+
+    @Value("${printer.atol.SETTING_DEFAULT_TAX_NUM}")
+    private int defaultTaxNum;
 
     @PostConstruct
     public void init() throws Exception {
@@ -247,41 +251,57 @@ public class AtolPrinter implements Printer {
             }
         }
 
+        try {
+            BigDecimal discount = new BigDecimal(0.0);
+            for (ItemRecord r : record.itemList) {
+                BigDecimal price = new BigDecimal(r.price);
+                BigDecimal discountPosition = new BigDecimal(0.0);
+                if (r.discountSum != null) {
+                    discountPosition = new BigDecimal(r.discountSum);
+                } else if (r.discountPercent != null) {
+                    if (r.discountPercent > 100) {
+                        r.discountPercent = 100.0;
+                    }
+                    BigDecimal value = new BigDecimal(r.price).multiply(new BigDecimal(r.quantity));
+                    discountPosition = value.multiply(new BigDecimal(r.discountPercent)).divide(new BigDecimal(100.0));
+                }
+                discount = discount.add(discountPosition);
 
-        for(ItemRecord r: record.itemList) {
-            int discountType = IFptr.DISCOUNT_SUMM;
-            double discountSum = r.discountSum != null ? r.discountSum : 0.0;
+                BigDecimal priceWithDiscount = price.subtract(discountPosition);
 
-            if (r.discountPercent != null) {
-                discountType = IFptr.DISCOUNT_PERCENT;
-                discountSum = r.discountPercent;
+                logger.info("Name: " + r.name + ", price=" + price + ", discount = " + discountPosition + ", priceWithDiscount = " + priceWithDiscount);
+
+                int tax = r.taxNumber != null ? r.taxNumber : defaultTaxNum;
+
+                BigDecimal positionSum = priceWithDiscount.multiply(new BigDecimal(r.quantity));
+                registrationFZ54(r.name, priceWithDiscount.doubleValue(), r.quantity, positionSum.doubleValue(), tax);
             }
 
-            int tax = r.taxNumber != null ? r.taxNumber : 1;
+            // Скидка на чек
+            logger.info("check discount: " + discount.doubleValue());
+            //discount(0, IFptr.DISCOUNT_SUMM, IFptr.DESTINATION_CHECK);
 
-            registrationFZ54(r.name, r.price, r.quantity, discountType, discountSum, tax);
+            if (record.creditSum != null && record.creditSum > 0) {
+                payment(record.creditSum, 1);   //1 по карте
+            }
+
+            if (record.moneySum != null && record.moneySum > 0) {
+                payment(record.moneySum, 0);
+            }
+
+            if (record.phone != null && !record.phone.isEmpty()) {
+                sendCheck(record.phone);
+            } else if (record.email != null && !record.email.isEmpty()) {
+                sendCheck(record.email);
+            }
+
+            // Закрываем чек
+            closeCheck(0);
         }
-
-        // Скидка на чек
-        //discount(1, IFptr.DISCOUNT_PERCENT, IFptr.DESTINATION_CHECK);
-
-        if (record.creditSum != null && record.creditSum > 0) {
-            payment(record.creditSum, 1);   //1 по карте
+        catch (PrinterException e) {
+            cancelCheck();
+            throw e;
         }
-
-        if (record.moneySum != null && record.moneySum > 0) {
-            payment(record.moneySum, 0);
-        }
-
-        if (record.phone != null && !record.phone.isEmpty()) {
-            sendCheck(record.phone);
-        }
-        else if (record.email != null && !record.email.isEmpty()) {
-            sendCheck(record.email);
-        }
-
-        // Закрываем чек
-        closeCheck(0);
     }
 
     private void sendCheck(String address) throws PrinterException {
@@ -339,17 +359,31 @@ public class AtolPrinter implements Printer {
         printHeader();
     }
 
-    private void registrationFZ54(String name, double price, double quantity, int discountType,
-                                         double discount, int taxNumber) throws PrinterException {
-        if (fptr.put_DiscountType(discountType) < 0)
+    private void discount(double sum, int type, int destination) throws PrinterException {
+        if (fptr.put_Summ(sum) < 0)
             checkError(fptr);
-        if (fptr.put_Summ(discount) < 0)
+        if (fptr.put_DiscountType(type) < 0)
             checkError(fptr);
-        if (fptr.put_TaxNumber(taxNumber) < 0)
+        if (fptr.put_Destination(destination) < 0)
+            checkError(fptr);
+        if (fptr.Discount() < 0)
+            checkError(fptr);
+    }
+
+    private void registrationFZ54(String name, double price, double quantity, double positionSum, int taxNumber) throws PrinterException {
+        if (fptr.put_DiscountType(IFptr.DISCOUNT_SUMM) < 0)
+            checkError(fptr);
+        if (fptr.put_Summ(0) < 0)
+            checkError(fptr);
+
+
+        if (fptr.put_PositionSum(positionSum) < 0)
             checkError(fptr);
         if (fptr.put_Quantity(quantity) < 0)
             checkError(fptr);
         if (fptr.put_Price(price) < 0)
+            checkError(fptr);
+        if (fptr.put_TaxNumber(taxNumber) < 0)
             checkError(fptr);
         if (fptr.put_TextWrap(IFptr.WRAP_WORD) < 0)
             checkError(fptr);

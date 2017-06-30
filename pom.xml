@@ -29,7 +29,7 @@
         <dependency>
             <groupId>fptr</groupId>
             <artifactId>fptr</artifactId>
-            <version>1.0</version>
+            <version>9.10.0</version>
         </dependency>
 
         <dependency>
