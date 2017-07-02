@@ -64,7 +64,7 @@ public class KKMServerStarter implements ApplicationContextAware {
 
     private SSLContext getSSLContext() throws Exception {
         InputStream keystoreInput = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream("keystore");
+                .getResourceAsStream("ytimes.jks");
         SSLContext context = getSSLFactories(keystoreInput, "ytimes");
         keystoreInput.close();
         return context;
