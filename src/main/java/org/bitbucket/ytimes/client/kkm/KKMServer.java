@@ -75,7 +75,7 @@ public class KKMServer extends WebSocketServer {
                     printer.printNewGuest(record);
                 }
                 catch (PrinterException e) {
-                    if (e.getCode() == -11 || e.getCode() == -1) {
+                    if (isDeviseNotAvailable(e)) {
                         printer.connect();
                         printer.printNewGuest(record);
                     }
@@ -91,7 +91,7 @@ public class KKMServer extends WebSocketServer {
                     printer.printCheck(record);
                 }
                 catch (PrinterException e) {
-                    if (e.getCode() == -11 || e.getCode() == -1) {
+                    if (isDeviseNotAvailable(e)) {
                         printer.connect();
                         printer.printCheck(record);
                     }
@@ -107,7 +107,7 @@ public class KKMServer extends WebSocketServer {
                     printer.printPredCheck(record);
                 }
                 catch (PrinterException e) {
-                    if (e.getCode() == -11 || e.getCode() == -1) {
+                    if (isDeviseNotAvailable(e)) {
                         printer.connect();
                         printer.printPredCheck(record);
                     }
@@ -124,7 +124,7 @@ public class KKMServer extends WebSocketServer {
                     printer.reportX();
                 }
                 catch (PrinterException e) {
-                    if (e.getCode() == -11 || e.getCode() == -1) {
+                    if (isDeviseNotAvailable(e)) {
                         printer.connect();
                         printer.reportX();
                     }
@@ -142,7 +142,7 @@ public class KKMServer extends WebSocketServer {
                     printer.reportZ();
                 }
                 catch (PrinterException e) {
-                    if (e.getCode() == -11 || e.getCode() == -1) {
+                    if (isDeviseNotAvailable(e)) {
                         printer.connect();
                         printer.reportZ();
                     }
@@ -170,6 +170,12 @@ public class KKMServer extends WebSocketServer {
         catch (PrinterException e) {
             processException(conn, e);
         }
+    }
+
+    private boolean isDeviseNotAvailable(PrinterException e) {
+        return e.getCode() == -11 ||    //нет связи
+                e.getCode() == -1 ||
+                e.getCode() == -3;  //порт не доступен
     }
 
     private void checkCode(String code) throws PrinterException {
