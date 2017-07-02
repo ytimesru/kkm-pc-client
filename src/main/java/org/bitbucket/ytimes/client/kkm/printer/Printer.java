@@ -8,6 +8,8 @@ import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
  */
 public interface Printer {
 
+    void connect() throws PrinterException;
+
     void reportZ() throws PrinterException;
 
     void reportX() throws PrinterException;

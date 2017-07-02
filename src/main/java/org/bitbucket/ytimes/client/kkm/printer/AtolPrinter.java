@@ -54,6 +54,18 @@ public class AtolPrinter implements Printer {
 
     @PostConstruct
     public void init() throws Exception {
+        connect();
+    }
+
+    public void connect() throws PrinterException {
+        if (fptr != null) {
+            try {
+                finalize();
+            }
+            catch (Throwable e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
         logger.info("START ATOL PRINTER");
         logger.info("PORT: " + port);
 
@@ -187,6 +199,7 @@ public class AtolPrinter implements Printer {
         printBoldText("ИТОГО: " + record.moneySum, IFptr.ALIGNMENT_RIGHT, IFptr.WRAP_LINE);
 
         if (GuestType.TIME.equals(record.type) && record.guestInfoList != null) {
+            printText("");
             printText("РАССЧИТЫВАЕМЫЕ ГОСТИ", IFptr.ALIGNMENT_LEFT, IFptr.WRAP_LINE);
             int i = 1;
             for(GuestRecord r: record.guestInfoList) {
@@ -205,6 +218,7 @@ public class AtolPrinter implements Printer {
         }
 
         if (GuestType.TOGO.equals(record.type)  && record.guestInfoList != null) {
+            printText("");
             for(GuestRecord r: record.guestInfoList) {
                 String name = r.name;
                 if (!StringUtils.isEmpty(r.phone)) {
@@ -219,6 +233,7 @@ public class AtolPrinter implements Printer {
         }
 
         if (record.additionalInfo != null) {
+            printText("");
             for(String s: record.additionalInfo) {
                 printText(s, IFptr.ALIGNMENT_CENTER, IFptr.WRAP_WORD);
             }
@@ -321,28 +336,28 @@ public class AtolPrinter implements Printer {
 
     private void checkRecord(PrintCheckCommandRecord record) throws PrinterException {
         if (record.itemList == null || record.itemList.isEmpty()) {
-            throw new PrinterException("Список оплаты пустой");
+            throw new PrinterException(0, "Список оплаты пустой");
         }
         if (record.moneySum == null && record.creditSum == null) {
-            throw new PrinterException("Итоговое значение для оплаты не задано");
+            throw new PrinterException(0, "Итоговое значение для оплаты не задано");
         }
         if (record.moneySum != null && record.moneySum == 0.0 &&
             record.creditSum != null && record.creditSum == 0.0) {
-            throw new PrinterException("Итоговое значение для оплаты не задано");
+            throw new PrinterException(0, "Итоговое значение для оплаты не задано");
         }
         for(ItemRecord r: record.itemList) {
             if (StringUtils.isEmpty(r.name)) {
-                throw new PrinterException("Не задано наименование позиции");
+                throw new PrinterException(0, "Не задано наименование позиции");
             }
             if (r.price == null) {
-                throw new PrinterException("Не задана цена позиции: " + r.name);
+                throw new PrinterException(0, "Не задана цена позиции: " + r.name);
             }
             if (r.quantity == null) {
-                throw new PrinterException("Не задано количество позиции: " + r.name);
+                throw new PrinterException(0, "Не задано количество позиции: " + r.name);
             }
 
             if (r.discountPercent != null && r.discountSum != null) {
-                throw new PrinterException("Нужно задать только один тип скидки - либо в процентах, либо в сумме. Позиция: " + r.name);
+                throw new PrinterException(0, "Нужно задать только один тип скидки - либо в процентах, либо в сумме. Позиция: " + r.name);
             }
         }
     }
@@ -528,13 +543,13 @@ public class AtolPrinter implements Printer {
                 if (log) {
                     logger.error(message);
                 }
-                throw new PrinterException(message);
+                throw new PrinterException(rc, message);
             } else {
                 String message = String.format("[%d] %s", rc, rd);
                 if (log) {
                     logger.error(message);
                 }
-                throw new PrinterException(message);
+                throw new PrinterException(rc, message);
             }
         }
     }
