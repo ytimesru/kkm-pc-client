@@ -28,4 +28,8 @@ public class PrintCheckCommandRecord extends AbstractCommandRecord {
     public String email;
     public String phone;
 
+    //Кассир
+    public String userFIO;
+    public String userPosition;
+
 }
