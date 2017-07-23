@@ -327,6 +327,80 @@ public class AtolPrinter implements Printer {
         }
     }
 
+    synchronized public void printReturnCheck(PrintCheckCommandRecord record) throws PrinterException {
+        checkRecord(record);
+
+        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, userPassword) < 0)
+            checkError(fptr);
+        if (fptr.ApplySingleSettings() < 0)
+            checkError(fptr);
+
+        cancelCheck();
+
+        if (record.userFIO != null && !record.userPosition.isEmpty()) {
+            String fio = record.userFIO;
+            if (record.userPosition != null && !record.userPosition.isEmpty()) {
+                fio = record.userPosition + " " + fio;
+            }
+            setUserFIO(fio);
+        }
+
+        // Открываем чек продажи, попутно обработав превышение смены
+        try {
+            openCheck(IFptr.CHEQUE_TYPE_RETURN);
+        } catch (PrinterException e) {
+            // Проверка на превышение смены
+            if (fptr.get_ResultCode() == -3822) {
+                reportZ();
+                openCheck(IFptr.CHEQUE_TYPE_RETURN);
+            } else {
+                throw e;
+            }
+        }
+
+        try {
+            BigDecimal discount = new BigDecimal(0.0);
+            for (ItemRecord r : record.itemList) {
+                BigDecimal price = new BigDecimal(r.price);
+                BigDecimal discountPosition = new BigDecimal(0.0);
+                if (r.discountSum != null) {
+                    discountPosition = new BigDecimal(r.discountSum);
+                } else if (r.discountPercent != null) {
+                    if (r.discountPercent > 100) {
+                        r.discountPercent = 100.0;
+                    }
+                    BigDecimal value = new BigDecimal(r.price).multiply(new BigDecimal(r.quantity));
+                    discountPosition = value.multiply(new BigDecimal(r.discountPercent)).divide(new BigDecimal(100.0));
+                }
+                discount = discount.add(discountPosition);
+
+                BigDecimal priceWithDiscount = price.subtract(discountPosition);
+
+                logger.info("Name: " + r.name + ", price=" + price + ", discount = " + discountPosition + ", priceWithDiscount = " + priceWithDiscount);
+
+                int tax = r.taxNumber != null ? r.taxNumber : defaultTaxNum;
+
+                BigDecimal positionSum = priceWithDiscount.multiply(new BigDecimal(r.quantity));
+                registrationFZ54(r.name, priceWithDiscount.doubleValue(), r.quantity, positionSum.doubleValue(), tax);
+            }
+
+            if (record.creditSum != null && record.creditSum > 0) {
+                payment(record.creditSum, 1);   //1 по карте
+            }
+
+            if (record.moneySum != null && record.moneySum > 0) {
+                payment(record.moneySum, 0);
+            }
+
+            // Закрываем чек
+            closeCheck(0);
+        }
+        catch (PrinterException e) {
+            cancelCheck();
+            throw e;
+        }
+    }
+
     private void sendCheck(String address) throws PrinterException {
         if (fptr.put_FiscalPropertyNumber(1008) < 0) {
             checkError(fptr);
