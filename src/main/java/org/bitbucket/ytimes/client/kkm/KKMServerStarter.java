@@ -2,6 +2,7 @@ package org.bitbucket.ytimes.client.kkm;
 
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
+import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
 import org.java_websocket.server.DefaultSSLWebSocketServerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +59,9 @@ public class KKMServerStarter implements ApplicationContextAware {
             AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
             Printer printer = (Printer) beanFactory.createBean(AtolPrinter.class,AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE, true);
             return printer;
+        }
+        else if ("testPrinter".equals(printerType)) {
+            return new TestPrinter();
         }
         throw new IllegalStateException("Unknown printer: " + printerType);
     }
