@@ -1,15 +1,14 @@
 package org.bitbucket.ytimes.client.kkm;
 
+import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
 import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
-import org.java_websocket.server.DefaultSSLWebSocketServerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -32,7 +31,7 @@ public class KKMServerStarter implements ApplicationContextAware {
     }
 
     @Autowired
-    private KKMServer server;
+    private KKMWebServer server;
 
     @Value("${printer.type}")
     private String printerType;
@@ -41,8 +40,8 @@ public class KKMServerStarter implements ApplicationContextAware {
     public void init() throws Exception {
         SSLContext context = getSSLContext();
         server.setPrinter(getPrinter());
-        server.setWebSocketFactory( new DefaultSSLWebSocketServerFactory( context ) );
-        server.start();
+        server.makeSecure(context.getServerSocketFactory(), null);
+        server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
 
         BufferedReader sysin = new BufferedReader( new InputStreamReader( System.in ) );
         while ( true ) {

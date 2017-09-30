@@ -1,12 +1,6 @@
 package org.bitbucket.ytimes.client.kkm;
 
-import org.java_websocket.WebSocketImpl;
-import org.java_websocket.server.DefaultSSLWebSocketServerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import javax.net.ssl.*;
-import java.io.*;
-import java.security.KeyStore;
 
 /**
  * Created by andrey on 27.05.17.
