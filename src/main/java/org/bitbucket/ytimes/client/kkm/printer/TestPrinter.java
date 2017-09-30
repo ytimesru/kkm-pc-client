@@ -11,10 +11,6 @@ import org.slf4j.LoggerFactory;
 public class TestPrinter implements Printer {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    public void connect() throws PrinterException {
-        logger.info("connect");
-    }
-
     public void reportZ() throws PrinterException {
         logger.info("report z");
     }

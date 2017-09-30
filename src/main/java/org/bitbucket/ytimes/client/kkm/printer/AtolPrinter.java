@@ -57,7 +57,7 @@ public class AtolPrinter implements Printer {
         connect();
     }
 
-    public void connect() throws PrinterException {
+    private void connect() throws PrinterException {
         if (fptr != null) {
             try {
                 finalize();
@@ -114,16 +114,31 @@ public class AtolPrinter implements Printer {
         if (fptr.ApplySingleSettings() < 0)
             checkError(fptr);
 
-        // Подключаемся к устройству
-        if (fptr.put_DeviceEnabled(true) < 0)
-            checkError(fptr);
+        doConnect();
+        try {
+            // Проверка связи
+            if (fptr.GetStatus() < 0)
+                checkError(fptr);
 
-        // Проверка связи
-        if (fptr.GetStatus() < 0)
-            checkError(fptr);
+            cancelCheck();
+        }
+        finally {
+            doDisconnect();
+        }
 
-        cancelCheck();
         logger.info("ATOL PRINTER STARTED");
+    }
+
+    private void doConnect() throws PrinterException {
+        if (fptr.put_DeviceEnabled(true) < 0) {
+            checkError(fptr);
+        }
+    }
+
+    private void doDisconnect() throws PrinterException {
+        if (fptr.put_DeviceEnabled(false) < 0) {
+            checkError(fptr);
+        }
     }
 
     @Override
@@ -146,37 +161,59 @@ public class AtolPrinter implements Printer {
     }
 
     synchronized public void reportX() throws PrinterException {
-        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
-            checkError(fptr);
-        if (fptr.ApplySingleSettings() < 0)
-            checkError(fptr);
-        if (fptr.put_Mode(IFptr.MODE_REPORT_NO_CLEAR) < 0)
-            checkError(fptr);
-        if (fptr.SetMode() < 0)
-            checkError(fptr);
-        if (fptr.put_ReportType(IFptr.REPORT_X) < 0)
-            checkError(fptr);
-        if (fptr.Report() < 0)
-            checkError(fptr);
+        doConnect();
+        try {
+            if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
+                checkError(fptr);
+            if (fptr.ApplySingleSettings() < 0)
+                checkError(fptr);
+            if (fptr.put_Mode(IFptr.MODE_REPORT_NO_CLEAR) < 0)
+                checkError(fptr);
+            if (fptr.SetMode() < 0)
+                checkError(fptr);
+            if (fptr.put_ReportType(IFptr.REPORT_X) < 0)
+                checkError(fptr);
+            if (fptr.Report() < 0)
+                checkError(fptr);
+        }
+        finally {
+            doDisconnect();
+        }
     }
 
     synchronized public void reportZ() throws PrinterException {
-        if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
-            checkError(fptr);
-        if (fptr.ApplySingleSettings() < 0)
-            checkError(fptr);
-        if (fptr.put_Mode(IFptr.MODE_REPORT_CLEAR) < 0)
-            checkError(fptr);
-        if (fptr.SetMode() < 0)
-            checkError(fptr);
-        if (fptr.put_ReportType(IFptr.REPORT_Z) < 0)
-            checkError(fptr);
-        if (fptr.Report() < 0)
-            checkError(fptr);
+        doConnect();
+        try {
+            if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
+                checkError(fptr);
+            if (fptr.ApplySingleSettings() < 0)
+                checkError(fptr);
+            if (fptr.put_Mode(IFptr.MODE_REPORT_CLEAR) < 0)
+                checkError(fptr);
+            if (fptr.SetMode() < 0)
+                checkError(fptr);
+            if (fptr.put_ReportType(IFptr.REPORT_Z) < 0)
+                checkError(fptr);
+            if (fptr.Report() < 0)
+                checkError(fptr);
+        }
+        finally {
+            doDisconnect();
+        }
     }
 
     //выставление счета
     synchronized public void printPredCheck(PrintCheckCommandRecord record) throws PrinterException {
+        doConnect();
+        try {
+            doPrintPredCheck(record);
+        }
+        finally {
+            doDisconnect();
+        }
+    }
+
+    private void doPrintPredCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
         printText("СЧЕТ");
@@ -244,6 +281,16 @@ public class AtolPrinter implements Printer {
     }
 
     synchronized public void printCheck(PrintCheckCommandRecord record) throws PrinterException {
+        doConnect();
+        try {
+            doPrintCheck(record);
+        }
+        finally {
+            doDisconnect();
+        }
+    }
+
+    private void doPrintCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, userPassword) < 0)
@@ -328,6 +375,16 @@ public class AtolPrinter implements Printer {
     }
 
     synchronized public void printReturnCheck(PrintCheckCommandRecord record) throws PrinterException {
+        doConnect();
+        try {
+            doPrintReturnCheck(record);
+        }
+        finally {
+            doDisconnect();
+        }
+    }
+
+    private void doPrintReturnCheck(PrintCheckCommandRecord record) throws PrinterException {
         checkRecord(record);
 
         if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, userPassword) < 0)
@@ -460,15 +517,21 @@ public class AtolPrinter implements Printer {
     }
 
     synchronized public void printNewGuest(NewGuestCommandRecord record) throws PrinterException {
-        printText(record.name);
-        printText(record.startTime);
-        if (!StringUtils.isEmpty(record.barcodeNum)) {
-            printBarcode(IFptr.BARCODE_TYPE_CODE39, record.barcodeNum, 100);
+        doConnect();
+        try {
+            printText(record.name);
+            printText(record.startTime);
+            if (!StringUtils.isEmpty(record.barcodeNum)) {
+                printBarcode(IFptr.BARCODE_TYPE_CODE39, record.barcodeNum, 100);
+            }
+            printText("");
+            printText("");
+            printText("");
+            printHeader();
         }
-        printText("");
-        printText("");
-        printText("");
-        printHeader();
+        finally {
+            doDisconnect();
+        }
     }
 
     private void discount(double sum, int type, int destination) throws PrinterException {

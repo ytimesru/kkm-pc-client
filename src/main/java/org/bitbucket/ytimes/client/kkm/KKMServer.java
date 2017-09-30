@@ -71,101 +71,32 @@ public class KKMServer extends WebSocketServer {
             if ("newGuest".equals(action.action)) {
                 NewGuestCommandRecord record = parseMessage(conn, action.data, NewGuestCommandRecord.class);
                 checkCode(record.code);
-                try {
-                    printer.printNewGuest(record);
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.printNewGuest(record);
-                    }
-                    else {
-                        throw e;
-                    }
-                }
+                printer.printNewGuest(record);
             }
             else if ("printCheck".equals(action.action)) {
                 PrintCheckCommandRecord record = parseMessage(conn, action.data, PrintCheckCommandRecord.class);
                 checkCode(record.code);
-                try {
-                    printer.printCheck(record);
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.printCheck(record);
-                    }
-                    else {
-                        throw e;
-                    }
-                }
+                printer.printCheck(record);
             }
             else if ("printPredCheck".equals(action.action)) {
                 PrintCheckCommandRecord record = parseMessage(conn, action.data, PrintCheckCommandRecord.class);
                 checkCode(record.code);
-                try {
-                    printer.printPredCheck(record);
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.printPredCheck(record);
-                    }
-                    else {
-                        throw e;
-                    }
-                }
+                printer.printPredCheck(record);
             }
             else if ("printReturnCheck".equals(action.action)) {
                 PrintCheckCommandRecord record = parseMessage(conn, action.data, PrintCheckCommandRecord.class);
                 checkCode(record.code);
-                try {
-                    printer.printReturnCheck(record);
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.printReturnCheck(record);
-                    }
-                    else {
-                        throw e;
-                    }
-                }
+                printer.printReturnCheck(record);
             }
             else if ("reportX".equals(action.action)) {
                 ReportCommandRecord record = parseMessage(conn, action.data, ReportCommandRecord.class);
                 checkCode(record.code);
-
-                try {
-                    printer.reportX();
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.reportX();
-                    }
-                    else {
-                        throw e;
-                    }
-                }
-
+                printer.reportX();
             }
             else if ("reportZ".equals(action.action)) {
                 ReportCommandRecord record = parseMessage(conn, action.data, ReportCommandRecord.class);
                 checkCode(record.code);
-
-                try {
-                    printer.reportZ();
-                }
-                catch (PrinterException e) {
-                    if (isDeviseNotAvailable(e)) {
-                        printer.connect();
-                        printer.reportZ();
-                    }
-                    else {
-                        throw e;
-                    }
-                }
+                printer.reportZ();
             }
             else {
                 sendError(conn, "kkm server", "Неизвестная команда: " + action.action);
@@ -186,12 +117,6 @@ public class KKMServer extends WebSocketServer {
         catch (PrinterException e) {
             processException(conn, e);
         }
-    }
-
-    private boolean isDeviseNotAvailable(PrinterException e) {
-        return e.getCode() == -11 ||    //нет связи
-                e.getCode() == -1 ||
-                e.getCode() == -3;  //порт не доступен
     }
 
     private void checkCode(String code) throws PrinterException {
