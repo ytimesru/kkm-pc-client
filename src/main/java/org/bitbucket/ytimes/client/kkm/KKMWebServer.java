@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -25,21 +26,22 @@ import java.util.HashMap;
 public class KKMWebServer extends NanoHTTPD {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
-
+    private ObjectMapper mapper = new ObjectMapper();
     private Printer printer;
+    private int port;
 
     @Value("${websocket.code}")
     private String code;
 
-    private ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     public KKMWebServer(@Value("${websocket.port}") int port) {
         super(port);
-        onStart(port);
+        this.port = port;
     }
 
-    private void onStart(int port) {
+    @PostConstruct
+    private void onStart() {
         try {
             logger.info("KKM server started: ");
 
