@@ -188,6 +188,10 @@ public class AtolPrinter implements Printer {
                 checkError(fptr);
             if (fptr.ApplySingleSettings() < 0)
                 checkError(fptr);
+            if (fptr.put_Mode(IFptr.MODE_REGISTRATION) < 0)
+                checkError(fptr);
+            if (fptr.SetMode() < 0)
+                checkError(fptr);
             if (fptr.OpenSession() < 0)
                 checkError(fptr);
         }
@@ -202,6 +206,10 @@ public class AtolPrinter implements Printer {
             if (fptr.put_DeviceSingleSetting(IFptr.SETTING_USERPASSWORD, 30) < 0)
                 checkError(fptr);
             if (fptr.ApplySingleSettings() < 0)
+                checkError(fptr);
+            if (fptr.put_Mode(IFptr.MODE_REGISTRATION) < 0)
+                checkError(fptr);
+            if (fptr.SetMode() < 0)
                 checkError(fptr);
             if (fptr.put_Summ(sum) < 0)
                 checkError(fptr);
