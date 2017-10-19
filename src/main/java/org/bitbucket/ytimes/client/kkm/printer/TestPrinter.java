@@ -35,4 +35,12 @@ public class TestPrinter implements Printer {
         logger.info("print new guest");
     }
 
+    public void cashIncome(Integer summ) throws PrinterException {
+        logger.info("cash income");
+    }
+
+    public void startShift() throws PrinterException {
+        logger.info("start shift");
+    }
+
 }
