@@ -491,7 +491,13 @@ public class AtolPrinter implements Printer {
             }
 
             // Закрываем чек
-            closeCheck(0);
+            if (Boolean.TRUE.equals(record.testMode)) {
+                cancelCheck();
+                throw new PrinterException(0, "Тестовый режим. Чек отменен.");
+            }
+            else {
+                closeCheck(0);
+            }
         }
         catch (PrinterException e) {
             cancelCheck();

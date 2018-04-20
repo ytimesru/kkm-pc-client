@@ -14,7 +14,8 @@ public class PrintCheckCommandRecord extends AbstractCommandRecord {
     public List<GuestRecord> guestInfoList;
     public GuestType type;
 
-    //TODO дубликат чека
+    //TODO дубликат чека.
+    //? похоже такой функции не существует
     public Boolean repeat;
 
     //TODO доп. инфо, чтобы вывести рекламмную акцию в чеке
@@ -31,5 +32,7 @@ public class PrintCheckCommandRecord extends AbstractCommandRecord {
     //Кассир
     public String userFIO;
     public String userPosition;
+
+    public Boolean testMode;
 
 }
