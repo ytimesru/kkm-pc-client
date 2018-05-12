@@ -1,7 +1,7 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
-import org.bitbucket.ytimes.client.kkm.record.NewGuestCommandRecord;
 import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
+import org.bitbucket.ytimes.client.kkm.record.PrinterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +10,14 @@ import org.slf4j.LoggerFactory;
  */
 public class TestPrinter implements Printer {
     protected Logger logger = LoggerFactory.getLogger(getClass());
+
+    public TestPrinter() {
+        logger.info("init test printer");
+    }
+
+    public boolean isConnected() {
+        return true;
+    }
 
     public void reportZ() throws PrinterException {
         logger.info("report z");
@@ -31,10 +39,6 @@ public class TestPrinter implements Printer {
         logger.info("print pred check");
     }
 
-    public void printNewGuest(NewGuestCommandRecord record) throws PrinterException {
-        logger.info("print new guest");
-    }
-
     public void cashIncome(Integer summ) throws PrinterException {
         logger.info("cash income");
     }
@@ -43,4 +47,6 @@ public class TestPrinter implements Printer {
         logger.info("start shift");
     }
 
+    public void destroy() throws PrinterException {
+    }
 }

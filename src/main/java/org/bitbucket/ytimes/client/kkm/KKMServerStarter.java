@@ -22,24 +22,14 @@ import java.security.KeyStore;
  * Created by root on 27.05.17.
  */
 @Component
-public class KKMServerStarter implements ApplicationContextAware {
-
-    private ApplicationContext applicationContext;
-
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
+public class KKMServerStarter {
 
     @Autowired
     private KKMWebServer server;
 
-    @Value("${printer.type}")
-    private String printerType;
-
     @PostConstruct
     public void init() throws Exception {
         SSLContext context = getSSLContext();
-        server.setPrinter(getPrinter());
         server.makeSecure(context.getServerSocketFactory(), null);
         server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
 
@@ -51,18 +41,6 @@ public class KKMServerStarter implements ApplicationContextAware {
                 break;
             }
         }
-    }
-
-    private Printer getPrinter() {
-        if ("atolPrinter".equals(printerType)) {
-            AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
-            Printer printer = (Printer) beanFactory.createBean(AtolPrinter.class,AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE, true);
-            return printer;
-        }
-        else if ("testPrinter".equals(printerType)) {
-            return new TestPrinter();
-        }
-        throw new IllegalStateException("Unknown printer: " + printerType);
     }
 
     private SSLContext getSSLContext() throws Exception {

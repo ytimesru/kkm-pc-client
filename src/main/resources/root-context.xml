@@ -14,7 +14,6 @@
         <property name="locations">
             <array>
                 <value>classpath:app.properties</value>
-                <value>classpath:application.properties</value>
             </array>
         </property>
         <property name="fileEncoding" value="UTF-8"/>

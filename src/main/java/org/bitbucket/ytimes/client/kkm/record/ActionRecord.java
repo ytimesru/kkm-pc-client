@@ -5,6 +5,7 @@ package org.bitbucket.ytimes.client.kkm.record;
  */
 public class ActionRecord {
 
+    public String code;
     public String action;
     public String data;
 

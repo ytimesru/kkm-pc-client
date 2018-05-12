@@ -10,6 +10,8 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by root on 27.05.17.
@@ -18,46 +20,75 @@ public class AtolPrinter implements Printer {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     private IFptr fptr;
-
-    @Value("${printer.atol.SETTING_PORT}")
     private String port;
-
-    @Value("${printer.atol.ip}")
     private String wifiIP;
-
-    @Value("${printer.atol.port}")
     private Integer wifiPort;
-
-    @Value("${printer.atol.SETTING_VID}")
-    private String vid;
-
-    @Value("${printer.atol.SETTING_PID}")
-    private String pid;
-
-    @Value("${printer.atol.SETTING_PROTOCOL}")
-    private int protocol;
-
-    @Value("${printer.atol.SETTING_MODEL}")
     private int model;
+    private Map<String, Integer> modelList = new HashMap<String, Integer>();
 
-    @Value("${printer.atol.SETTING_ACCESSPASSWORD}")
-    private int accessPassword;
+    private String vid = "";
+    private String pid = "";
+    private int protocol = 2;
+    private int accessPassword = 0;
+    private int userPassword = 30;
+    private int baudrate = 115200;
 
-    @Value("${printer.atol.SETTING_USERPASSWORD}")
-    private int userPassword;
+    public AtolPrinter(String model, String port, String wifiIP, Integer wifiPort) throws PrinterException {
+        this.port = port;
+        this.wifiIP = wifiIP;
+        this.wifiPort = wifiPort;
+        modelList.put("ATOL11F", 67);
+        modelList.put("ATOL22F", 63);
+        modelList.put("ATOL30F", 61);
+        modelList.put("ATOL55F", 62);
 
-    @Value("${printer.atol.SETTING_BAUDRATE}")
-    private int baudrate;
+        if (!modelList.containsKey(model)) {
+            throw new PrinterException(0, "Модель пока не поддерживается");
+        }
 
-    @Value("${printer.atol.SETTING_DEFAULT_TAX_NUM}")
-    private int defaultTaxNum;
-
-    @PostConstruct
-    public void init() throws Exception {
-        connect();
+        this.model = modelList.get(model);
     }
 
-    private void connect() throws PrinterException {
+    public void setVid(String vid) {
+        this.vid = vid;
+    }
+
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
+
+    public void setProtocol(int protocol) {
+        this.protocol = protocol;
+    }
+
+    public void setAccessPassword(int accessPassword) {
+        this.accessPassword = accessPassword;
+    }
+
+    public void setUserPassword(int userPassword) {
+        this.userPassword = userPassword;
+    }
+
+    public void setBaudrate(int baudrate) {
+        this.baudrate = baudrate;
+    }
+
+    public synchronized boolean isConnected() throws PrinterException {
+        doConnect();
+        try {
+            // Проверка связи
+            if (fptr.GetStatus() < 0) {
+                checkError(fptr);
+            }
+
+            return true;
+        }
+        finally {
+            doDisconnect();
+        }
+    }
+
+    public void connect() throws PrinterException {
         if (fptr != null) {
             try {
                 finalize();
@@ -77,6 +108,7 @@ public class AtolPrinter implements Printer {
 
         try {
             int i = Integer.parseInt(port);
+            logger.info("Connect to port: " + i);
             if (fptr.put_DeviceSingleSetting(IFptr.SETTING_PORT, i) < 0)
                 checkError(fptr);
         }
@@ -86,6 +118,7 @@ public class AtolPrinter implements Printer {
         }
 
         if ("TCPIP".equals(port)) {
+            logger.info("Connect to: " + wifiIP + ":" + wifiPort);
             if (fptr.put_DeviceSingleSetting(IFptr.SETTING_IPADDRESS, wifiIP) < 0)
                 checkError(fptr);
             if (fptr.put_DeviceSingleSetting(IFptr.SETTING_IPPORT, wifiPort) < 0)
@@ -139,6 +172,10 @@ public class AtolPrinter implements Printer {
         if (fptr.put_DeviceEnabled(false) < 0) {
             checkError(fptr);
         }
+    }
+
+    public void destroy() throws Throwable {
+        finalize();
     }
 
     @Override
@@ -382,8 +419,7 @@ public class AtolPrinter implements Printer {
 
                 logger.info("Name: " + r.name + ", price=" + price + ", discount = " + discountPosition + ", priceWithDiscount = " + priceWithDiscount);
 
-                int tax = r.taxNumber != null ? r.taxNumber : defaultTaxNum;
-
+                int tax = r.taxNumber;
                 BigDecimal positionSum = priceWithDiscount.multiply(new BigDecimal(r.quantity));
                 registrationFZ54(r.name, priceWithDiscount.doubleValue(), r.quantity, positionSum.doubleValue(), tax);
             }
@@ -476,7 +512,7 @@ public class AtolPrinter implements Printer {
 
                 logger.info("Name: " + r.name + ", price=" + price + ", discount = " + discountPosition + ", priceWithDiscount = " + priceWithDiscount);
 
-                int tax = r.taxNumber != null ? r.taxNumber : defaultTaxNum;
+                int tax = r.taxNumber;
 
                 BigDecimal positionSum = priceWithDiscount.multiply(new BigDecimal(r.quantity));
                 registrationFZ54(r.name, priceWithDiscount.doubleValue(), r.quantity, positionSum.doubleValue(), tax);
@@ -560,24 +596,6 @@ public class AtolPrinter implements Printer {
             if (r.discountPercent != null && r.discountSum != null) {
                 throw new PrinterException(0, "Нужно задать только один тип скидки - либо в процентах, либо в сумме. Позиция: " + r.name);
             }
-        }
-    }
-
-    synchronized public void printNewGuest(NewGuestCommandRecord record) throws PrinterException {
-        doConnect();
-        try {
-            printText(record.name);
-            printText(record.startTime);
-            if (!StringUtils.isEmpty(record.barcodeNum)) {
-                printBarcode(IFptr.BARCODE_TYPE_CODE39, record.barcodeNum, 100);
-            }
-            printText("");
-            printText("");
-            printText("");
-            printHeader();
-        }
-        finally {
-            doDisconnect();
         }
     }
 
