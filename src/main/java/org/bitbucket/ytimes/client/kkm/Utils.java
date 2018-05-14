@@ -6,15 +6,15 @@ import java.util.Date;
 
 public class Utils {
 
-    private static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 
-    public static String toDateTimeString(Date date) {
+    public static String toDateString(Date date) {
         if (date == null) {
             return null;
         }
         Calendar instance = Calendar.getInstance();
         instance.setTime(date);
-        return dateTimeFormat.format(date.getTime());
+        return dateFormat.format(date.getTime());
     }
 
 

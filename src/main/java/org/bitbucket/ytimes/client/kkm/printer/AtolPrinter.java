@@ -112,12 +112,14 @@ public class AtolPrinter implements Printer {
             record.modelName       = fptr.getParamString(IFptr.LIBFPTR_PARAM_MODEL_NAME);
             record.unitVersion     = fptr.getParamString(IFptr.LIBFPTR_PARAM_UNIT_VERSION);
 
+            //ОФД
             fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_REG_INFO);
             if (fptr.fnQueryData() < 0) {
                 checkError(fptr);
             }
 
             record.ofdName = fptr.getParamString(1046);
+
 
             fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_OFD_EXCHANGE_STATUS);
             if (fptr.fnQueryData() < 0) {
@@ -127,9 +129,11 @@ public class AtolPrinter implements Printer {
             record.ofdUnsentCount    = fptr.getParamInt(IFptr.LIBFPTR_PARAM_DOCUMENTS_COUNT);
             Date unsentDateTime = fptr.getParamDateTime(IFptr.LIBFPTR_PARAM_DATE_TIME);
             if (unsentDateTime != null) {
-                record.ofdUnsentDatetime = Utils.toDateTimeString(unsentDateTime);
+                record.ofdUnsentDatetime = Utils.toDateString(unsentDateTime);
             }
 
+
+            //ФФД
             fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_FFD_VERSIONS);
             if (fptr.fnQueryData() < 0) {
                 checkError(fptr);
@@ -142,22 +146,23 @@ public class AtolPrinter implements Printer {
             long ffdVersion          = fptr.getParamInt(IFptr.LIBFPTR_PARAM_FFD_VERSION);
             record.ffdVersion        = getFFDVersion(ffdVersion);
 
+            //ФН
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_FN_INFO);
+            fptr.fnQueryData();
+
+            record.fnSerial = fptr.getParamString(IFptr.LIBFPTR_PARAM_SERIAL_NUMBER);
+            record.fnVersion = fptr.getParamString(IFptr.LIBFPTR_PARAM_FN_VERSION);
+
+            //ФН Дата окончания
             fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_VALIDITY);
             if (fptr.fnQueryData() < 0) {
                 checkError(fptr);
             }
 
-            Date dateTime            = fptr.getParamDateTime(IFptr.LIBFPTR_PARAM_DATE_TIME);
+            Date dateTime = fptr.getParamDateTime(IFptr.LIBFPTR_PARAM_DATE_TIME);
             if (dateTime != null) {
-                record.fnDateTime = Utils.toDateTimeString(dateTime);
+                record.fnDate = Utils.toDateString(dateTime);
             }
-
-            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_FN_INFO);
-            fptr.fnQueryData();
-
-            record.fnSerial             = fptr.getParamString(IFptr.LIBFPTR_PARAM_SERIAL_NUMBER);
-            record.fnVersion            = fptr.getParamString(IFptr.LIBFPTR_PARAM_FN_VERSION);
-
 
             return record;
         }

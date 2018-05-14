@@ -16,6 +16,6 @@ public class ModelInfoRecord {
 
     public String fnSerial;
     public String fnVersion;
-    public String fnDateTime;
+    public String fnDate;
 
 }
