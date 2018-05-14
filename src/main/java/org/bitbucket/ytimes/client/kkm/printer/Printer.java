@@ -1,9 +1,6 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
-import org.bitbucket.ytimes.client.kkm.record.AbstractCommandRecord;
-import org.bitbucket.ytimes.client.kkm.record.CashIncomeRecord;
-import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
-import org.bitbucket.ytimes.client.kkm.record.ReportCommandRecord;
+import org.bitbucket.ytimes.client.kkm.record.*;
 
 /**
  * Created by root on 27.05.17.
@@ -11,6 +8,8 @@ import org.bitbucket.ytimes.client.kkm.record.ReportCommandRecord;
 public interface Printer {
 
     boolean isConnected() throws PrinterException;
+
+    ModelInfoRecord getInfo() throws PrinterException;
 
     void reportZ(AbstractCommandRecord record) throws PrinterException;
 

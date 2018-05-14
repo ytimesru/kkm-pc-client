@@ -1,5 +1,6 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
+import org.bitbucket.ytimes.client.kkm.Utils;
 import org.bitbucket.ytimes.client.kkm.record.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,7 @@ import ru.atol.drivers10.fptr.Fptr;
 import ru.atol.drivers10.fptr.IFptr;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +27,8 @@ public class AtolPrinter implements Printer {
     private Map<String, Integer> modelList = new HashMap<String, Integer>();
 
     private VAT vat = VAT.NO;
+    private OFDChannel ofdChannel = null;
+
     private String vid = "";
     private String pid = "";
     private int protocol = 2;
@@ -81,12 +85,11 @@ public class AtolPrinter implements Printer {
         this.vat = vat;
     }
 
-    public synchronized boolean isConnected() throws PrinterException {
-        if (fptr.isOpened()) {
-            if (fptr.close() < 0) {
-                checkError(fptr);
-            }
-        }
+    public void setOfdChannel(OFDChannel ofdChannel) {
+        this.ofdChannel = ofdChannel;
+    }
+
+    synchronized public boolean isConnected() throws PrinterException {
         doConnect();
         try {
             return true;
@@ -94,6 +97,86 @@ public class AtolPrinter implements Printer {
         finally {
             doDisconnect();
         }
+    }
+
+    synchronized public ModelInfoRecord getInfo() throws PrinterException {
+        doConnect();
+        try {
+            fptr.setParam(IFptr.LIBFPTR_PARAM_DATA_TYPE, IFptr.LIBFPTR_DT_STATUS);
+            if (fptr.queryData() < 0) {
+                checkError(fptr);
+            }
+
+            ModelInfoRecord record = new ModelInfoRecord();
+            record.serialNumber    = fptr.getParamString(IFptr.LIBFPTR_PARAM_SERIAL_NUMBER);
+            record.modelName       = fptr.getParamString(IFptr.LIBFPTR_PARAM_MODEL_NAME);
+            record.unitVersion     = fptr.getParamString(IFptr.LIBFPTR_PARAM_UNIT_VERSION);
+
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_REG_INFO);
+            if (fptr.fnQueryData() < 0) {
+                checkError(fptr);
+            }
+
+            record.ofdName = fptr.getParamString(1046);
+
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_OFD_EXCHANGE_STATUS);
+            if (fptr.fnQueryData() < 0) {
+                checkError(fptr);
+            }
+
+            record.ofdUnsentCount    = fptr.getParamInt(IFptr.LIBFPTR_PARAM_DOCUMENTS_COUNT);
+            Date unsentDateTime = fptr.getParamDateTime(IFptr.LIBFPTR_PARAM_DATE_TIME);
+            if (unsentDateTime != null) {
+                record.ofdUnsentDatetime = Utils.toDateTimeString(unsentDateTime);
+            }
+
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_FFD_VERSIONS);
+            if (fptr.fnQueryData() < 0) {
+                checkError(fptr);
+            }
+
+            long deviceFfdVersion    = fptr.getParamInt(IFptr.LIBFPTR_PARAM_DEVICE_FFD_VERSION);
+            record.deviceFfdVersion  = getFFDVersion(deviceFfdVersion);
+            long fnFfdVersion        = fptr.getParamInt(IFptr.LIBFPTR_PARAM_FN_FFD_VERSION);
+            record.fnFfdVersion      = getFFDVersion(fnFfdVersion);
+            long ffdVersion          = fptr.getParamInt(IFptr.LIBFPTR_PARAM_FFD_VERSION);
+            record.ffdVersion        = getFFDVersion(ffdVersion);
+
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_VALIDITY);
+            if (fptr.fnQueryData() < 0) {
+                checkError(fptr);
+            }
+
+            Date dateTime            = fptr.getParamDateTime(IFptr.LIBFPTR_PARAM_DATE_TIME);
+            if (dateTime != null) {
+                record.fnDateTime = Utils.toDateTimeString(dateTime);
+            }
+
+            fptr.setParam(IFptr.LIBFPTR_PARAM_FN_DATA_TYPE, IFptr.LIBFPTR_FNDT_FN_INFO);
+            fptr.fnQueryData();
+
+            record.fnSerial             = fptr.getParamString(IFptr.LIBFPTR_PARAM_SERIAL_NUMBER);
+            record.fnVersion            = fptr.getParamString(IFptr.LIBFPTR_PARAM_FN_VERSION);
+
+
+            return record;
+        }
+        finally {
+            doDisconnect();
+        }
+    }
+
+    private String getFFDVersion(long version) {
+        if (version == IFptr.LIBFPTR_FFD_1_0) {
+            return "1.0";
+        }
+        if (version == IFptr.LIBFPTR_FFD_1_0_5) {
+            return "1.05";
+        }
+        if (version == IFptr.LIBFPTR_FFD_1_1) {
+            return "1.1";
+        }
+        return "неизвестная";
     }
 
     synchronized public void applySettingsAndConnect() throws PrinterException {
@@ -126,6 +209,20 @@ public class AtolPrinter implements Printer {
             logger.info("Connect to port: " + port);
             fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_PORT, String.valueOf(IFptr.LIBFPTR_PORT_USB));
             fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_USB_DEVICE_PATH, port);
+        }
+
+        if (ofdChannel != null) {
+            if (ofdChannel.equals(OFDChannel.PROTO)) {
+                logger.info("ОФД средвами транспортного протокола (OFD PROTO 1)");
+                fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_OFD_CHANNEL, String.valueOf(IFptr.LIBFPTR_OFD_CHANNEL_PROTO));
+            }
+            else if (ofdChannel.equals(OFDChannel.ASIS)) {
+                logger.info("ОФД используя настройки ККМ (OFD NONE 2)");
+                fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_OFD_CHANNEL, String.valueOf(IFptr.LIBFPTR_OFD_CHANNEL_NONE));
+            }
+            else {
+                throw new PrinterException(0, "Не поддерживаемое значение параметра связи с ОФД");
+            }
         }
 
         if (fptr.applySingleSettings() < 0) {

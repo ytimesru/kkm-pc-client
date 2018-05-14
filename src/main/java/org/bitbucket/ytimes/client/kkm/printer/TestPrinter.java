@@ -1,9 +1,6 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
-import org.bitbucket.ytimes.client.kkm.record.AbstractCommandRecord;
-import org.bitbucket.ytimes.client.kkm.record.CashIncomeRecord;
-import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
-import org.bitbucket.ytimes.client.kkm.record.ReportCommandRecord;
+import org.bitbucket.ytimes.client.kkm.record.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +16,10 @@ public class TestPrinter implements Printer {
 
     public boolean isConnected() {
         return true;
+    }
+
+    public ModelInfoRecord getInfo() throws PrinterException {
+        return new ModelInfoRecord();
     }
 
     public void reportX(ReportCommandRecord record) throws PrinterException {

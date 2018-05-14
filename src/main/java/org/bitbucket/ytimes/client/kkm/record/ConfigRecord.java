@@ -10,6 +10,7 @@ public class ConfigRecord {
     public String wifiIP;
     public Integer wifiPort;
     public VAT vat;
+    public OFDChannel ofd;
     public Map<String, String> params;
 
 

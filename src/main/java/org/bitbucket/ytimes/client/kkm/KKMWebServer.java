@@ -142,6 +142,9 @@ public class KKMWebServer extends NanoHTTPD {
             if (printer != null) {
                 try {
                     record.isConnected = printer.isConnected();
+                    if (Boolean.TRUE.equals(record.isConnected)) {
+                        record.info = printer.getInfo();
+                    }
                 }
                 catch (Exception e) {
                     record.lastError = e.getMessage();
@@ -224,6 +227,7 @@ public class KKMWebServer extends NanoHTTPD {
             configService.setValue("wifiIP", record.wifiIP);
             configService.setValue("wifiPort", record.wifiPort != null ? record.wifiPort + "" : null);
             configService.setValue("vat", record.vat != null ? record.vat.name() : VAT.NO.name());
+            configService.setValue("ofd", record.ofd != null ? record.ofd.name() : OFDChannel.PROTO.name());
             if (record.params != null && record.params.size() > 0) {
                 for (String keys : record.params.keySet()) {
                     configService.setValue(keys, record.params.get(keys));
@@ -242,6 +246,8 @@ public class KKMWebServer extends NanoHTTPD {
         record.params = new HashMap<String, String>();
         record.model = "NONE";
         record.verificationCode = this.verificationCode;
+        record.vat = VAT.NO;
+        record.ofd = OFDChannel.PROTO;
         for(String keys: configService.getAllKeys()) {
             String value = configService.getValue(keys, null);
             if (keys.equals("verificationCode")) {
@@ -273,6 +279,13 @@ public class KKMWebServer extends NanoHTTPD {
                 }
                 else {
                     record.vat = VAT.NO;
+                }
+            }else if (keys.equals("ofd")) {
+                if (!StringUtils.isEmpty(value)) {
+                    record.ofd = OFDChannel.valueOf(value);
+                }
+                else {
+                    record.ofd = OFDChannel.PROTO;
                 }
             }
             else {
@@ -310,6 +323,10 @@ public class KKMWebServer extends NanoHTTPD {
             AtolPrinter p = new AtolPrinter(model, port, wifiIP, wifiPort);
             String vatStr = configService.getValue("vat", VAT.NO.name());
             p.setVat(VAT.valueOf(vatStr));
+
+            String ofdStr = configService.getValue("ofd", OFDChannel.PROTO.name());
+            p.setOfdChannel(OFDChannel.valueOf(ofdStr));
+
             if (configService.contains("vid")) {
                 p.setVid(configService.getValue("vid"));
             }
