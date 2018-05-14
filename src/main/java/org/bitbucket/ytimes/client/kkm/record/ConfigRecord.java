@@ -9,6 +9,7 @@ public class ConfigRecord {
     public String port;
     public String wifiIP;
     public Integer wifiPort;
+    public VAT vat;
     public Map<String, String> params;
 
 

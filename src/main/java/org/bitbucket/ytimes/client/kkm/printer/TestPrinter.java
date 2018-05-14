@@ -1,7 +1,9 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
+import org.bitbucket.ytimes.client.kkm.record.AbstractCommandRecord;
+import org.bitbucket.ytimes.client.kkm.record.CashIncomeRecord;
 import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
-import org.bitbucket.ytimes.client.kkm.record.PrinterType;
+import org.bitbucket.ytimes.client.kkm.record.ReportCommandRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +21,24 @@ public class TestPrinter implements Printer {
         return true;
     }
 
-    public void reportZ() throws PrinterException {
+    public void reportX(ReportCommandRecord record) throws PrinterException {
+        logger.info("report x");
+    }
+
+    public void reportZ(AbstractCommandRecord record) throws PrinterException {
         logger.info("report z");
     }
 
-    public void reportX() throws PrinterException {
-        logger.info("report x");
+    public void copyLastDoc(AbstractCommandRecord record) throws PrinterException {
+        logger.info("report copy last doc");
+    }
+
+    public void demoReport(AbstractCommandRecord record) throws PrinterException {
+        logger.info("report demo");
+    }
+
+    public void ofdTestReport(AbstractCommandRecord record) throws PrinterException {
+        logger.info("report odf test");
     }
 
     public void printCheck(PrintCheckCommandRecord record) throws PrinterException {
@@ -39,11 +53,11 @@ public class TestPrinter implements Printer {
         logger.info("print pred check");
     }
 
-    public void cashIncome(Integer summ) throws PrinterException {
+    public void cashIncome(CashIncomeRecord summ) throws PrinterException {
         logger.info("cash income");
     }
 
-    public void startShift() throws PrinterException {
+    public void startShift(ReportCommandRecord record) throws PrinterException {
         logger.info("start shift");
     }
 

@@ -5,6 +5,9 @@ package org.bitbucket.ytimes.client.kkm.record;
  */
 public abstract class AbstractCommandRecord {
 
-    public String code;
+    //Кассир
+    public String userFIO;
+    public String userPosition;
+    public String userINN;
 
 }

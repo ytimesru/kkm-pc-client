@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -127,7 +128,7 @@ public class KKMWebServer extends NanoHTTPD {
         if (action == null) {
             throw new IllegalArgumentException("error parse ActionRecord");
         }
-        checkCode(action.code);
+        //checkCode(action.code);
 
         logger.info("Обработка действия: " + action.action);
         if ("config".equals(action.action)) {
@@ -168,19 +169,31 @@ public class KKMWebServer extends NanoHTTPD {
                 }
                 else if ("reportX".equals(action.action)) {
                     ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
-                    printer.reportX();
+                    printer.reportX(record);
                 }
                 else if ("reportZ".equals(action.action)) {
                     ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
-                    printer.reportZ();
+                    printer.reportZ(record);
+                }
+                else if ("copyLastDoc".equals(action.action)) {
+                    ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
+                    printer.copyLastDoc(record);
+                }
+                else if ("ofdTest".equals(action.action)) {
+                    ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
+                    printer.ofdTestReport(record);
+                }
+                else if ("reportDemo".equals(action.action)) {
+                    ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
+                    printer.demoReport(record);
                 }
                 else if ("openSession".equals(action.action)) {
                     ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
-                    printer.startShift();
+                    printer.startShift(record);
                 }
                 else if ("cashIncome".equals(action.action)) {
                     CashIncomeRecord record = parseMessage(action.data, CashIncomeRecord.class);
-                    printer.cashIncome(record.sum);
+                    printer.cashIncome(record);
                 }
                 else {
                     throw new IllegalArgumentException("Неизвестная команда: " + action.action + ". Вероятно требуется обновить " +
@@ -194,7 +207,7 @@ public class KKMWebServer extends NanoHTTPD {
 
     private void checkCode(String code) throws PrinterException {
         String verificationCode = configService.getValue("verificationCode", this.verificationCode);
-        if (code == null || code.trim().isEmpty() || !code.equals(verificationCode)) {
+        if (StringUtils.isEmpty(code) || !code.equals(verificationCode)) {
             throw new PrinterException(0, "Код подтверждения не совпадает, доступ запрещен");
         }
     }
@@ -210,6 +223,7 @@ public class KKMWebServer extends NanoHTTPD {
             configService.setValue("port", record.port);
             configService.setValue("wifiIP", record.wifiIP);
             configService.setValue("wifiPort", record.wifiPort != null ? record.wifiPort + "" : null);
+            configService.setValue("vat", record.vat != null ? record.vat.name() : VAT.NO.name());
             if (record.params != null && record.params.size() > 0) {
                 for (String keys : record.params.keySet()) {
                     configService.setValue(keys, record.params.get(keys));
@@ -253,6 +267,14 @@ public class KKMWebServer extends NanoHTTPD {
                     record.wifiPort = 5555;
                 }
             }
+            else if (keys.equals("vat")) {
+                if (!StringUtils.isEmpty(value)) {
+                    record.vat = VAT.valueOf(value);
+                }
+                else {
+                    record.vat = VAT.NO;
+                }
+            }
             else {
                 record.params.put(keys, value);
             }
@@ -271,7 +293,6 @@ public class KKMWebServer extends NanoHTTPD {
             }
             catch (Throwable e) {}
         }
-        printer = null;
 
         String model = configService.getValue("model", "NONE");
         if ("TEST".equals(model)) {
@@ -287,6 +308,8 @@ public class KKMWebServer extends NanoHTTPD {
             }
 
             AtolPrinter p = new AtolPrinter(model, port, wifiIP, wifiPort);
+            String vatStr = configService.getValue("vat", VAT.NO.name());
+            p.setVat(VAT.valueOf(vatStr));
             if (configService.contains("vid")) {
                 p.setVid(configService.getValue("vid"));
             }
@@ -306,8 +329,8 @@ public class KKMWebServer extends NanoHTTPD {
                 p.setBaudrate(configService.getIntValue("baudrate"));
             }
 
-            p.connect();
             printer = p;
+            p.applySettingsAndConnect();
         }
         logger.info("Init printer completed");
     }

@@ -1,8 +1,11 @@
 package org.bitbucket.ytimes.client.kkm.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Created by andrey on 30.05.17.
  */
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class GuestRecord {
 
     public String name;

@@ -25,10 +25,8 @@ public class PrintCheckCommandRecord extends AbstractCommandRecord {
     public String email;
     public String phone;
 
-    //Кассир
-    public String userFIO;
-    public String userPosition;
-
+    public Boolean onlyElectronically = false;
+    public Boolean dropPenny = false;
     public Boolean testMode;
 
 }
