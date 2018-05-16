@@ -30,7 +30,7 @@ public class CronService {
     //every 15 sec
     @Scheduled(fixedRate = 15000)
     public void sendIpIfNeed() throws Exception {
-        logger.info("Check client ip");
+        //logger.info("Check client ip");
 
         String moduleUUID = configService.getValue("moduleUUID", null);
         if (StringUtils.isEmpty(moduleUUID)) {
@@ -53,7 +53,7 @@ public class CronService {
         if (StringUtils.isEmpty(moduleIP) || !moduleIP.equals(clientIP)) {
             logger.info("New Client IP: " + clientIP);
             configService.setValue("moduleIP", clientIP);
-            configService.setValue("moduleIPSend", "false");
+            configService.setValue("moduleIPSent", "false");
             configService.save();
             moduleIP = clientIP;
         }
