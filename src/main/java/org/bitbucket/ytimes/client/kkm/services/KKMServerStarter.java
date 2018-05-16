@@ -1,14 +1,7 @@
-package org.bitbucket.ytimes.client.kkm;
+package org.bitbucket.ytimes.client.kkm.services;
 
 import fi.iki.elonen.NanoHTTPD;
-import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
-import org.bitbucket.ytimes.client.kkm.printer.Printer;
-import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -32,15 +25,6 @@ public class KKMServerStarter {
         SSLContext context = getSSLContext();
         server.makeSecure(context.getServerSocketFactory(), null);
         server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-
-        BufferedReader sysin = new BufferedReader( new InputStreamReader( System.in ) );
-        while ( true ) {
-            String in = sysin.readLine();
-            if( in.equals( "exit" ) ) {
-                server.stop();
-                break;
-            }
-        }
     }
 
     private SSLContext getSSLContext() throws Exception {

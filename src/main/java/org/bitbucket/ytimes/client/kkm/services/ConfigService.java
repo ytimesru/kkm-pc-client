@@ -1,4 +1,4 @@
-package org.bitbucket.ytimes.client.kkm;
+package org.bitbucket.ytimes.client.kkm.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,10 +7,7 @@ import org.springframework.util.DefaultPropertiesPersister;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class ConfigService {
@@ -20,6 +17,10 @@ public class ConfigService {
     @PostConstruct
     public void init() throws Exception {
         read();
+        if (config.get("moduleUUID") == null) {
+            config.put("moduleUUID", UUID.randomUUID().toString());
+            save();
+        }
     }
 
     public String getValue(String name, String defaultValue) {
@@ -71,12 +72,15 @@ public class ConfigService {
                 in.close();
             }
         }
+        catch (FileNotFoundException e) {
+            logger.warn("File " + getFileName() + " is not found.");
+        }
         catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
     }
 
-    public void save() throws IOException {
+    synchronized public void save() throws IOException {
         Properties props = new Properties();
         for(String keys: config.keySet()) {
             String value = config.get(keys);
@@ -91,7 +95,7 @@ public class ConfigService {
     }
 
     private String getFileName() {
-        return "application.properties";
+        return "config.properties";
     }
 
     public Set<String> getAllKeys() {

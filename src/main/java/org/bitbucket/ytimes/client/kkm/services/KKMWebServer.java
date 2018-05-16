@@ -1,7 +1,8 @@
-package org.bitbucket.ytimes.client.kkm;
+package org.bitbucket.ytimes.client.kkm.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.iki.elonen.NanoHTTPD;
+import org.bitbucket.ytimes.client.kkm.Utils;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
 import org.bitbucket.ytimes.client.kkm.printer.PrinterException;
@@ -16,8 +17,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
+import java.net.*;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -50,27 +50,16 @@ public class KKMWebServer extends NanoHTTPD {
     private void onStart() {
         try {
             logger.info("Server started: ");
+            String clientIP = Utils.getClientIP();
 
-            boolean hasAddress = false;
-            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-            for (NetworkInterface netint : Collections.list(nets)) {
-                Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
-                for (InetAddress inetAddress : Collections.list(inetAddresses)) {
-                    if (inetAddress.toString().startsWith("/192")) {
-                        logger.info("  Device address: " + inetAddress.toString().substring(1));
-                        hasAddress = true;
-                    }
-                    else if (inetAddress.toString().startsWith("192")) {
-                        logger.info("  Device address: " + inetAddress.toString());
-                        hasAddress = true;
-                    }
-                }
+            if (clientIP != null) {
+                logger.info("  Device address: " + clientIP);
+                logger.info("  Port: " + port);
             }
-
-            if (!hasAddress) {
+            else {
                 logger.info("  Device address: unknown");
+                logger.info("  Port: " + port);
             }
-            logger.info("  Port: " + port);
 
             initPrinter();
         }
@@ -185,10 +174,6 @@ public class KKMWebServer extends NanoHTTPD {
                 else if ("ofdTest".equals(action.action)) {
                     ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
                     printer.ofdTestReport(record);
-                }
-                else if ("reportDemo".equals(action.action)) {
-                    ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);
-                    printer.demoReport(record);
                 }
                 else if ("openSession".equals(action.action)) {
                     ReportCommandRecord record = parseMessage(action.data, ReportCommandRecord.class);

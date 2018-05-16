@@ -2,23 +2,33 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:task="http://www.springframework.org/schema/task"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/context
-       http://www.springframework.org/schema/context/spring-context.xsd">
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/task
+       http://www.springframework.org/schema/task/spring-task.xsd">
 
     <context:annotation-config/>
-    <context:component-scan base-package="org.bitbucket.ytimes.client.kkm"/>
+    <context:component-scan base-package="org.bitbucket.ytimes.client.kkm.services"/>
 
+    <!-- Timer -->
+    <task:scheduler id="taskScheduler"/>
+    <task:executor id="taskExecutor" pool-size="3"/>
+    <task:annotation-driven executor="taskExecutor" scheduler="taskScheduler"/>
+
+
+    <!-- Default properties -->
     <bean id="properties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
             <array>
-                <value>classpath:app.properties</value>
+                <value>classpath:application.properties</value>
             </array>
         </property>
         <property name="fileEncoding" value="UTF-8"/>
         <property name="ignoreResourceNotFound" value="true"/>
     </bean>
-
 
 </beans>

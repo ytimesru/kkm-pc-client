@@ -10,12 +10,6 @@ public class Main {
     public static void main( String[] args ) throws Exception {
         ClassPathXmlApplicationContext ctx =
                 new ClassPathXmlApplicationContext("root-context.xml");
-
-        int port = 4900;
-        try {
-            port = Integer.parseInt( args[ 0 ] );
-        } catch ( Exception ex ) {
-        }
     }
 
 }
