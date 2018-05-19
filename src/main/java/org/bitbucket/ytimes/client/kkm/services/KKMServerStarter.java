@@ -70,7 +70,7 @@ public class KKMServerStarter {
         // initialize an ssl context to use these managers and set as default
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagers, trustManagers, null);
-        SSLContext.setDefault(sslContext);
+//        SSLContext.setDefault(sslContext);
         return sslContext;
     }
 

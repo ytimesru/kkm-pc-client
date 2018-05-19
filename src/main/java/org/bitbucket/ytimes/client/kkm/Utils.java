@@ -32,6 +32,18 @@ public class Utils {
                 else if (inetAddress.toString().startsWith("192")) {
                     return inetAddress.toString();
                 }
+                else if (inetAddress.toString().startsWith("/172")) {
+                    return inetAddress.toString().substring(1);
+                }
+                else if (inetAddress.toString().startsWith("172")) {
+                    return inetAddress.toString();
+                }
+                else if (inetAddress.toString().startsWith("/10")) {
+                    return inetAddress.toString().substring(1);
+                }
+                else if (inetAddress.toString().startsWith("10")) {
+                    return inetAddress.toString();
+                }
             }
         }
         return null;
