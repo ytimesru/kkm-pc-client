@@ -27,7 +27,7 @@ import java.util.HashMap;
  */
 @Component
 public class KKMWebServer extends NanoHTTPD {
-    public static String version = "2.0.0";
+    public static String version = "2.0.1";
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();
@@ -312,12 +312,6 @@ public class KKMWebServer extends NanoHTTPD {
             String ofdStr = configService.getValue("ofd", OFDChannel.PROTO.name());
             p.setOfdChannel(OFDChannel.valueOf(ofdStr));
 
-            if (configService.contains("vid")) {
-                p.setVid(configService.getValue("vid"));
-            }
-            if (configService.contains("pid")) {
-                p.setVid(configService.getValue("pid"));
-            }
             if (configService.contains("protocol")) {
                 p.setProtocol(configService.getIntValue("protocol"));
             }
@@ -326,9 +320,6 @@ public class KKMWebServer extends NanoHTTPD {
             }
             if (configService.contains("userPassword")) {
                 p.setUserPassword(configService.getIntValue("userPassword"));
-            }
-            if (configService.contains("baudrate")) {
-                p.setBaudrate(configService.getIntValue("baudrate"));
             }
 
             printer = p;

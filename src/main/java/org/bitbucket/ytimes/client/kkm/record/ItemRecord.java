@@ -16,9 +16,7 @@ public class ItemRecord {
     public Double discountSum;
     public Double discountPercent;
 
-    //1 по умолчанию. Выяснить, какое должно быть
-    public Integer taxNumber;
-    public VAT vatValue;
+   public VAT vatValue;
 
 
 

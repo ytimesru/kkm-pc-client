@@ -29,12 +29,9 @@ public class AtolPrinter implements Printer {
     private VAT vat = VAT.NO;
     private OFDChannel ofdChannel = null;
 
-    private String vid = "";
-    private String pid = "";
     private int protocol = 2;
     private int accessPassword = 0;
     private int userPassword = 30;
-    private int baudrate = 115200;
 
     public AtolPrinter(String model, String port, String wifiIP, Integer wifiPort) throws PrinterException {
         this.port = port;
@@ -49,20 +46,14 @@ public class AtolPrinter implements Printer {
         modelList.put("ATOL30F", 61);
         modelList.put("ATOL50F", 80);
         modelList.put("ATOL55F", 62);
+        modelList.put("ATOL90F", 72);
+        modelList.put("ATOL91F", 82);
 
         if (!modelList.containsKey(model)) {
-            throw new PrinterException(0, "Модель пока не поддерживается");
+            throw new PrinterException(0, "Модель не поддерживается в данной версии коммуникационного модуля");
         }
 
         this.model = modelList.get(model);
-    }
-
-    public void setVid(String vid) {
-        this.vid = vid;
-    }
-
-    public void setPid(String pid) {
-        this.pid = pid;
     }
 
     public void setProtocol(int protocol) {
@@ -75,10 +66,6 @@ public class AtolPrinter implements Printer {
 
     public void setUserPassword(int userPassword) {
         this.userPassword = userPassword;
-    }
-
-    public void setBaudrate(int baudrate) {
-        this.baudrate = baudrate;
     }
 
     public void setVat(VAT vat) {
