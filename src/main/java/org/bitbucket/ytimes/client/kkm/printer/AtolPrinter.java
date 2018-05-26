@@ -637,7 +637,8 @@ public class AtolPrinter implements Printer {
         fptr.setParam(IFptr.LIBFPTR_PARAM_RECEIPT_TYPE, type);
         if (!StringUtils.isEmpty(record.phone)) {
             fptr.setParam(1008, record.phone);
-        } else if (StringUtils.isEmpty(record.email)) {
+        }
+        else if (!StringUtils.isEmpty(record.email)) {
             fptr.setParam(1008, record.email);
         }
 
