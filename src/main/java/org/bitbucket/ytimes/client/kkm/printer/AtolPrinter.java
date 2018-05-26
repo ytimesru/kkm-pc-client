@@ -29,10 +29,6 @@ public class AtolPrinter implements Printer {
     private VAT vat = VAT.NO;
     private OFDChannel ofdChannel = null;
 
-    private int protocol = 2;
-    private int accessPassword = 0;
-    private int userPassword = 30;
-
     public AtolPrinter(String model, String port, String wifiIP, Integer wifiPort) throws PrinterException {
         this.port = port;
         this.wifiIP = wifiIP;
@@ -54,18 +50,6 @@ public class AtolPrinter implements Printer {
         }
 
         this.model = modelList.get(model);
-    }
-
-    public void setProtocol(int protocol) {
-        this.protocol = protocol;
-    }
-
-    public void setAccessPassword(int accessPassword) {
-        this.accessPassword = accessPassword;
-    }
-
-    public void setUserPassword(int userPassword) {
-        this.userPassword = userPassword;
     }
 
     public void setVat(VAT vat) {

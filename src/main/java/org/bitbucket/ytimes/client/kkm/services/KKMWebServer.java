@@ -312,16 +312,6 @@ public class KKMWebServer extends NanoHTTPD {
             String ofdStr = configService.getValue("ofd", OFDChannel.PROTO.name());
             p.setOfdChannel(OFDChannel.valueOf(ofdStr));
 
-            if (configService.contains("protocol")) {
-                p.setProtocol(configService.getIntValue("protocol"));
-            }
-            if (configService.contains("accessPassword")) {
-                p.setAccessPassword(configService.getIntValue("accessPassword"));
-            }
-            if (configService.contains("userPassword")) {
-                p.setUserPassword(configService.getIntValue("userPassword"));
-            }
-
             printer = p;
             p.applySettingsAndConnect();
         }
