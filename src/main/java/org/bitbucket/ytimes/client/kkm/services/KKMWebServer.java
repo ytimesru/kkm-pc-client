@@ -27,7 +27,7 @@ import java.util.HashMap;
  */
 @Component
 public class KKMWebServer extends NanoHTTPD {
-    public static String version = "2.0.2";
+    public static String version = "2.0.3";
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();
@@ -147,6 +147,10 @@ public class KKMWebServer extends NanoHTTPD {
                 throw new IllegalArgumentException("Не настроен принтер чеков. Проверьте настройки системы в разделе Оборудование");
             }
             else {
+                if (!printer.isConnected()) {
+                    printer.connect();
+                }
+
                 if ("printCheck".equals(action.action)) {
                     PrintCheckCommandRecord record = parseMessage(action.data, PrintCheckCommandRecord.class);
                     printer.printCheck(record);
@@ -229,10 +233,12 @@ public class KKMWebServer extends NanoHTTPD {
     private ConfigRecord getConfig() {
         ConfigRecord record = new ConfigRecord();
         record.params = new HashMap<String, String>();
-        record.model = "NONE";
+        record.model = "ATOLAUTO";
+        record.port  = "USBAUTO";
         record.verificationCode = this.verificationCode;
         record.vat = VAT.NO;
         record.ofd = OFDChannel.PROTO;
+        record.wifiPort = 5555;
         for(String keys: configService.getAllKeys()) {
             String value = configService.getValue(keys, null);
             if (keys.equals("verificationCode")) {
@@ -292,25 +298,14 @@ public class KKMWebServer extends NanoHTTPD {
             catch (Throwable e) {}
         }
 
-        String model = configService.getValue("model", "NONE");
-        if ("TEST".equals(model)) {
+        ConfigRecord config = getConfig();
+        if ("TEST".equals(config.model)) {
             printer = new TestPrinter();
         }
-        else if (model.startsWith("ATOL")) {
-            String port = configService.getValue("port");
-            String wifiIP = null;
-            Integer wifiPort = null;
-            if ("TCPIP".equals(port)) {
-                wifiIP = configService.getValue("wifiIP", "");
-                wifiPort = configService.getIntValue("wifiPort");
-            }
-
-            AtolPrinter p = new AtolPrinter(model, port, wifiIP, wifiPort);
-            String vatStr = configService.getValue("vat", VAT.NO.name());
-            p.setVat(VAT.valueOf(vatStr));
-
-            String ofdStr = configService.getValue("ofd", OFDChannel.PROTO.name());
-            p.setOfdChannel(OFDChannel.valueOf(ofdStr));
+        else if (config.model.startsWith("ATOL")) {
+            AtolPrinter p = new AtolPrinter(config.model, config.port, config.wifiIP, config.wifiPort);
+            p.setVat(config.vat);
+            p.setOfdChannel(config.ofd);
 
             printer = p;
             p.applySettingsAndConnect();

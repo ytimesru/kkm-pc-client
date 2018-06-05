@@ -62,6 +62,10 @@ public class TestPrinter implements Printer {
         logger.info("start shift");
     }
 
+    public void connect() throws PrinterException {
+
+    }
+
     public void destroy() throws PrinterException {
     }
 }

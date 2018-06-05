@@ -7,6 +7,7 @@ public enum OFDChannel {
     USB,
     ETHERNET,
     WIFI,
-    GSM
+    GSM,
+    TRANSPORT;
 
 }

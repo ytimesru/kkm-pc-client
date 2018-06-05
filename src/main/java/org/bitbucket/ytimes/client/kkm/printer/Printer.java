@@ -31,6 +31,8 @@ public interface Printer {
 
     void printPredCheck(PrintCheckCommandRecord record) throws PrinterException;
 
+    void connect() throws PrinterException;
+
     void destroy() throws Throwable;
 
 }
