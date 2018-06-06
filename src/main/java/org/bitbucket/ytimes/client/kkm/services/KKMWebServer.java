@@ -2,6 +2,8 @@ package org.bitbucket.ytimes.client.kkm.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.iki.elonen.NanoHTTPD;
+import org.bitbucket.ytimes.client.egais.EGAISProcessor;
+import org.bitbucket.ytimes.client.egais.EgaisException;
 import org.bitbucket.ytimes.client.kkm.Utils;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
@@ -39,6 +41,9 @@ public class KKMWebServer extends NanoHTTPD {
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private EGAISProcessor egaisProcessor;
 
     @Autowired
     public KKMWebServer(@Value("${port}") int port) {
@@ -112,7 +117,7 @@ public class KKMWebServer extends NanoHTTPD {
         return resp;
     }
 
-    private Object processAction(String json) throws PrinterException, IOException {
+    private Object processAction(String json) throws PrinterException, EgaisException, IOException {
         ActionRecord action = parseMessage(json, ActionRecord.class);
         if (action == null) {
             throw new IllegalArgumentException("error parse ActionRecord");
@@ -141,6 +146,9 @@ public class KKMWebServer extends NanoHTTPD {
                 }
             }
             return record;
+        }
+        else if ("egais/ttnlist".equals(action.action)) {
+            return egaisProcessor.getAvailableTTNList();
         }
         else {
             if (printer == null) {

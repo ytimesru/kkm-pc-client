@@ -75,6 +75,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.mycila</groupId>
+            <artifactId>mycila-xmltool</artifactId>
+            <version>4.4.ga</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>2.5.0</version>
+        </dependency>
 
         <dependency>
             <groupId>log4j</groupId>
