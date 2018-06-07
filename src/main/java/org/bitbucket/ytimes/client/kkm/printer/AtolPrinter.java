@@ -240,7 +240,7 @@ public class AtolPrinter implements Printer {
     }
 
     public void connect() throws PrinterException {
-        if (fptr.close() < 0) {
+        if (fptr.open() < 0) {
             checkError(fptr);
         }
         cancelCheck();
