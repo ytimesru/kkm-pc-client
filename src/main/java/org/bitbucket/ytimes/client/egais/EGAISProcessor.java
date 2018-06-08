@@ -2,6 +2,13 @@ package org.bitbucket.ytimes.client.egais;
 
 import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLTag;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.fluent.Content;
+import org.apache.http.client.fluent.Form;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
+import org.apache.http.util.EntityUtils;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
 import org.bitbucket.ytimes.client.kkm.Utils;
@@ -10,15 +17,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.fsrar.wegais.actttnsingle_v3.AcceptType;
+import ru.fsrar.wegais.actttnsingle_v3.WayBillActTypeV3;
 import ru.fsrar.wegais.clientref_v2.OrgInfoRusV2;
 import ru.fsrar.wegais.ttninformf2reg.WayBillInformF2RegType;
 import ru.fsrar.wegais.ttnsingle_v3.PositionType;
 import ru.fsrar.wegais.ttnsingle_v3.WayBillTypeV3;
+import ru.fsrar.wegais.wb_doc_single_01.DocBody;
 import ru.fsrar.wegais.wb_doc_single_01.Documents;
+import ru.fsrar.wegais.wb_doc_single_01.SenderInfo;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -82,6 +99,9 @@ public class EGAISProcessor {
             record.fullName = positionType.getProduct().getFullName();
             record.price = positionType.getPrice().doubleValue();
             record.quantity = positionType.getQuantity().intValue();
+            record.identity = positionType.getIdentity();
+            record.FARegId = positionType.getFARegId();
+            record.F2RegId = positionType.getInformF2().getF2RegId();
             ttn.itemList.add(record);
         }
         return ttn;
@@ -118,34 +138,140 @@ public class EGAISProcessor {
     }
 
     private String getUrl(String address) {
-        String url = configService.getValue("egaisUTMAddress", "http://localhost:8080/");
+        String url = configService.getValue("egaisUTMAddress");
         address = url + address;
         return changeURL(address);
     }
 
     private String changeURL(String address) {
-        if (address.equals("http://localhost:8080/opt/out")) {
-            return "http://static.nyc.local:81/egais/out.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/2")) {
-            return "http://static.nyc.local:81/egais/WayBill_v3_2.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/3")) {
-            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_3.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/4")) {
-            return "http://static.nyc.local:81/egais/FORM2REGINFO_4.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/5")) {
-            return "http://static.nyc.local:81/egais/FORM2REGINFO_5.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/6")) {
-            return "http://static.nyc.local:81/egais/WayBill_v3_6.xml";
-        }
-        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/7")) {
-            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_7.xml";
-        }
+//        if (address.equals("http://localhost:8080/opt/out")) {
+//            return "http://static.nyc.local:81/egais/out.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/2")) {
+//            return "http://static.nyc.local:81/egais/WayBill_v3_2.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/3")) {
+//            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_3.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/4")) {
+//            return "http://static.nyc.local:81/egais/FORM2REGINFO_4.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/5")) {
+//            return "http://static.nyc.local:81/egais/FORM2REGINFO_5.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/6")) {
+//            return "http://static.nyc.local:81/egais/WayBill_v3_6.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/7")) {
+//            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_7.xml";
+//        }
         return address;
+    }
+
+    public void rejectTTN(TTNRecord record) throws EgaisException {
+        sendWayBillAct(record, AcceptType.REJECTED, "1-1", null);
+        logger.info("REJECT");
+    }
+
+
+    public void acceptTTN(TTNRecord record) throws EgaisException {
+        sendWayBillAct(record, AcceptType.ACCEPTED, "1-1", null);
+        logger.info("ACCEPT");
+    }
+
+    public void acceptPartialTTN(TTNRecord record) throws EgaisException {
+        List<ru.fsrar.wegais.actttnsingle_v3.PositionType> types = new ArrayList<ru.fsrar.wegais.actttnsingle_v3.PositionType>();
+
+        for(TTNPositionRecord posRecord: record.itemList) {
+            ru.fsrar.wegais.actttnsingle_v3.PositionType position = new ru.fsrar.wegais.actttnsingle_v3.PositionType();
+            position.setInformF2RegId(posRecord.F2RegId);
+            position.setIdentity(posRecord.identity);
+            position.setRealQuantity(new BigDecimal(posRecord.actualQuantity));
+            types.add(position);
+        }
+        sendWayBillAct(record, AcceptType.ACCEPTED, "1-1", types);
+        logger.info("ACCEPTPARTIAL");
+    }
+
+    private void sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber, List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException {
+        try {
+            GregorianCalendar cal = new GregorianCalendar();
+            XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(cal);
+
+            WayBillActTypeV3.Header header = new WayBillActTypeV3.Header();
+            header.setIsAccept(isAccept);
+            header.setACTNUMBER(actNumber);
+            header.setActDate(curDate);
+            header.setWBRegId(record.number);
+            header.setNote(record.actNote);
+
+            WayBillActTypeV3.Content content = new WayBillActTypeV3.Content();
+            if (positionTypes != null) {
+                content.getPosition().addAll(positionTypes);
+            }
+
+            WayBillActTypeV3 act = new WayBillActTypeV3();
+            act.setHeader(header);
+            act.setContent(content);
+
+            DocBody docBody = new DocBody();
+            docBody.setWayBillActV3(act);
+
+            SenderInfo owner = new SenderInfo();
+            owner.setFSRARID(configService.getValue("egaisFSRARID"));
+
+            sendXML(docBody, owner);
+        }
+        catch (EgaisException e) {
+            logger.error(e.getMessage(), e);
+            throw e;
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            throw new EgaisException(e);
+        }
+    }
+
+    private void sendXML(DocBody docBody, SenderInfo owner) throws JAXBException, IOException, EgaisException {
+        Documents documents = new Documents();
+        documents.setDocument(docBody);
+        documents.setOwner(owner);
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
+        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+        // output pretty printed
+        jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+        StringWriter sw = new StringWriter();
+        jaxbMarshaller.marshal(documents, sw);
+
+        String xml = sw.toString();
+        sendXMLToEgais(xml, "opt/in/WayBillAct");
+    }
+
+    private void sendXMLToEgais(String xml, String url) throws IOException, EgaisException {
+        logger.info("Send xml to: " + url);
+        logger.info(xml);
+
+        url = getUrl(url);
+        List<NameValuePair> form = Form.form()
+                .add("xml_file", xml)
+                .build();
+        Response response = Request.Post(url)
+                .connectTimeout(10000)
+                .bodyForm(form)
+                .execute();
+
+        HttpResponse httpResponse = response.returnResponse();
+        int status = httpResponse.getStatusLine().getStatusCode();
+        String content = EntityUtils.toString(httpResponse.getEntity());
+
+        logger.info("Return code: " + status);
+        logger.info("Response: " + content);
+        if (status != 200) {
+            throw new EgaisException("Отправка в ЕГАИС завершилась с ошибкой: " + status);
+        }
     }
 
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
+import org.bitbucket.ytimes.client.egais.records.TTNRecord;
 import org.bitbucket.ytimes.client.kkm.Utils;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
@@ -147,8 +148,26 @@ public class KKMWebServer extends NanoHTTPD {
             }
             return record;
         }
-        else if ("egais/ttnlist".equals(action.action)) {
-            return egaisProcessor.getAvailableTTNList();
+        else if (action.action.startsWith("egais")) {
+            String egaisEnabled = configService.getValue("egaisENABLED", "false");
+            if (!"true".equals(egaisEnabled)) {
+                throw new IllegalArgumentException("Поддержка ЕГАИС в коммуникационном модуле выключена");
+            }
+            if ("egais/ttnlist".equals(action.action)) {
+                return egaisProcessor.getAvailableTTNList();
+            }
+            else if ("egais/ttnreject".equals(action.action)) {
+                TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                egaisProcessor.rejectTTN(record);
+            }
+            else if ("egais/ttnaccept".equals(action.action)) {
+                TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                egaisProcessor.acceptTTN(record);
+            }
+            else if ("egais/ttnacceptpartial".equals(action.action)) {
+                TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                egaisProcessor.acceptPartialTTN(record);
+            }
         }
         else {
             if (printer == null) {
@@ -225,6 +244,9 @@ public class KKMWebServer extends NanoHTTPD {
             configService.setValue("wifiPort", record.wifiPort != null ? record.wifiPort + "" : null);
             configService.setValue("vat", record.vat != null ? record.vat.name() : VAT.NO.name());
             configService.setValue("ofd", record.ofd != null ? record.ofd.name() : OFDChannel.PROTO.name());
+            configService.setValue("egaisENABLED", Boolean.TRUE.equals(record.egaisENABLED) ? "true" : "false");
+            configService.setValue("egaisFSRARID", record.egaisFSRARID);
+            configService.setValue("egaisUTMAddress", record.egaisUTMAddress);
             if (record.params != null && record.params.size() > 0) {
                 for (String keys : record.params.keySet()) {
                     configService.setValue(keys, record.params.get(keys));
@@ -247,6 +269,11 @@ public class KKMWebServer extends NanoHTTPD {
         record.vat = VAT.NO;
         record.ofd = OFDChannel.PROTO;
         record.wifiPort = 5555;
+
+        record.egaisENABLED = false;
+        record.egaisUTMAddress = "http://localhost:8080/";
+
+
         for(String keys: configService.getAllKeys()) {
             String value = configService.getValue(keys, null);
             if (keys.equals("verificationCode")) {
@@ -279,13 +306,23 @@ public class KKMWebServer extends NanoHTTPD {
                 else {
                     record.vat = VAT.NO;
                 }
-            }else if (keys.equals("ofd")) {
+            }
+            else if (keys.equals("ofd")) {
                 if (!StringUtils.isEmpty(value)) {
                     record.ofd = OFDChannel.valueOf(value);
                 }
                 else {
                     record.ofd = OFDChannel.PROTO;
                 }
+            }
+            else if (keys.equals("egaisENABLED")) {
+                record.egaisENABLED = "true".equals(value);
+            }
+            else if (keys.equals("egaisFSRARID")) {
+                record.egaisFSRARID = value;
+            }
+            else if (keys.equals("egaisUTMAddress")) {
+                record.egaisUTMAddress = value;
             }
             else {
                 record.params.put(keys, value);

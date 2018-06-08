@@ -1,7 +1,10 @@
 package org.bitbucket.ytimes.client.kkm.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ConfigRecord {
 
     public String verificationCode;
@@ -17,6 +20,8 @@ public class ConfigRecord {
     public Map<String, String> params;
 
     //EGAIS
+    public Boolean egaisENABLED;
+    public String egaisFSRARID;
     public String egaisUTMAddress;
 
 }

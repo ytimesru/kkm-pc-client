@@ -1,7 +1,10 @@
 package org.bitbucket.ytimes.client.egais.records;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TTNRecord {
 
     public String id;
@@ -15,5 +18,7 @@ public class TTNRecord {
 
     public String wayBillLink;
     public String form2RegInfoLink;
+
+    public String actNote;
 
 }
