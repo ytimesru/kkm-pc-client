@@ -2,12 +2,18 @@ package org.bitbucket.ytimes.client.egais;
 
 import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLTag;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.fluent.Content;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
@@ -38,6 +44,7 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -195,8 +202,7 @@ public class EGAISProcessor {
 
     private void sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber, List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException {
         try {
-            GregorianCalendar cal = new GregorianCalendar();
-            XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(cal);
+            XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 
             WayBillActTypeV3.Header header = new WayBillActTypeV3.Header();
             header.setIsAccept(isAccept);
@@ -255,17 +261,20 @@ public class EGAISProcessor {
         logger.info(xml);
 
         url = getUrl(url);
-        List<NameValuePair> form = Form.form()
-                .add("xml_file", xml)
-                .build();
-        Response response = Request.Post(url)
-                .connectTimeout(10000)
-                .bodyForm(form)
-                .execute();
 
-        HttpResponse httpResponse = response.returnResponse();
-        int status = httpResponse.getStatusLine().getStatusCode();
-        String content = EntityUtils.toString(httpResponse.getEntity());
+        HttpEntity entity = MultipartEntityBuilder
+                .create()
+                .addTextBody("xml_file", xml)
+                .build();
+
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.setEntity(entity);
+
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        HttpResponse response = httpClient.execute(httpPost);
+
+        int status = response.getStatusLine().getStatusCode();
+        String content = EntityUtils.toString(response.getEntity());
 
         logger.info("Return code: " + status);
         logger.info("Response: " + content);
