@@ -1,4 +1,4 @@
-package org.bitbucket.ytimes.client.kkm;
+package org.bitbucket.ytimes.client.main;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;

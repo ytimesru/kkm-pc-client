@@ -1,16 +1,18 @@
-package org.bitbucket.ytimes.client.kkm.services;
+package org.bitbucket.ytimes.client.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
-import org.bitbucket.ytimes.client.kkm.Utils;
+import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
 import org.bitbucket.ytimes.client.kkm.printer.PrinterException;
 import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
 import org.bitbucket.ytimes.client.kkm.record.*;
+import org.bitbucket.ytimes.client.screen.ScreenService;
+import org.bitbucket.ytimes.client.screen.record.ScreenInfoRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,16 +22,13 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.net.*;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 
 /**
  * Created by andrey on 01.10.17.
  */
 @Component
-public class KKMWebServer extends NanoHTTPD {
+public class WebServer extends NanoHTTPD {
     public static String version = "2.0.4";
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -47,7 +46,10 @@ public class KKMWebServer extends NanoHTTPD {
     private EGAISProcessor egaisProcessor;
 
     @Autowired
-    public KKMWebServer(@Value("${port}") int port) {
+    private ScreenService screenService;
+
+    @Autowired
+    public WebServer(@Value("${port}") int port) {
         super(port);
         this.port = port;
     }
@@ -167,6 +169,15 @@ public class KKMWebServer extends NanoHTTPD {
             else if ("egais/ttnacceptpartial".equals(action.action)) {
                 TTNRecord record = parseMessage(action.data, TTNRecord.class);
                 egaisProcessor.acceptPartialTTN(record);
+            }
+        }
+        else if (action.action.startsWith("screen")) {
+            if ("screen/clear".equals(action.action)) {
+                screenService.setInfo(null);
+            }
+            else if ("screen/set".equals(action.action)) {
+                ScreenInfoRecord record = parseMessage(action.data, ScreenInfoRecord.class);
+                screenService.setInfo(record);
             }
         }
         else {

@@ -1,30 +1,35 @@
-package org.bitbucket.ytimes.client.kkm.services;
+package org.bitbucket.ytimes.client.main;
 
 import fi.iki.elonen.NanoHTTPD;
+import org.java_websocket.server.DefaultSSLWebSocketServerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.KeyStore;
 
 /**
  * Created by root on 27.05.17.
  */
 @Component
-public class KKMServerStarter {
+public class ServerStarter {
 
     @Autowired
-    private KKMWebServer server;
+    private WebServer server;
+
+    @Autowired
+    private WSServer wsServer;
 
     @PostConstruct
     public void init() throws Exception {
         SSLContext context = getSSLContext();
         server.makeSecure(context.getServerSocketFactory(), null);
         server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
+
+        wsServer.setWebSocketFactory(new DefaultSSLWebSocketServerFactory(context));
+        wsServer.start();
     }
 
     private SSLContext getSSLContext() throws Exception {

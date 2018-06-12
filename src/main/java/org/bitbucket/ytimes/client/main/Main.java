@@ -1,4 +1,4 @@
-package org.bitbucket.ytimes.client.kkm;
+package org.bitbucket.ytimes.client.main;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
