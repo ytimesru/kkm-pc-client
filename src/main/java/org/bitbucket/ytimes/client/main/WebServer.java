@@ -5,13 +5,12 @@ import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
-import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.Printer;
 import org.bitbucket.ytimes.client.kkm.printer.PrinterException;
 import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
 import org.bitbucket.ytimes.client.kkm.record.*;
-import org.bitbucket.ytimes.client.screen.ScreenService;
+import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.bitbucket.ytimes.client.screen.record.ScreenInfoRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +45,7 @@ public class WebServer extends NanoHTTPD {
     private EGAISProcessor egaisProcessor;
 
     @Autowired
-    private ScreenService screenService;
+    private WSServer screenService;
 
     @Autowired
     public WebServer(@Value("${port}") int port) {

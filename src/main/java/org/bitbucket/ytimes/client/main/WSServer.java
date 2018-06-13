@@ -1,6 +1,8 @@
 package org.bitbucket.ytimes.client.main;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bitbucket.ytimes.client.screen.record.ScreenInfoRecord;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -16,6 +18,7 @@ import java.net.InetSocketAddress;
 public class WSServer extends WebSocketServer {
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();
+    private static ScreenInfoRecord info;
 
     @Autowired
     public WSServer(@Value("${websocket.port}") int port) {
@@ -23,9 +26,24 @@ public class WSServer extends WebSocketServer {
         logger.info("start ws on port: " + port);
     }
 
+    public void setInfo(ScreenInfoRecord record) {
+        info = record;
+        sendToAll();
+    }
+
+    private void sendToAll() {
+        try {
+            broadcast(info != null ? mapper.writeValueAsString(info) : "clear");
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         logger.info(conn.getRemoteSocketAddress().getAddress().getHostAddress() + " connected");
+        sendToAll();
     }
 
     @Override
@@ -48,8 +66,5 @@ public class WSServer extends WebSocketServer {
         logger.info("ws server started");
     }
 
-    public void refreshAll() {
-        broadcast("refresh");
-    }
 
 }

@@ -16,7 +16,7 @@ public class ItemRecord {
     public Double discountSum;
     public Double discountPercent;
 
-   public VAT vatValue;
+    public VAT vatValue;
 
 
 
