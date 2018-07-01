@@ -169,6 +169,12 @@ public class AtolPrinter implements Printer {
             fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_PORT, String.valueOf(IFptr.LIBFPTR_PORT_USB));
             fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_USB_DEVICE_PATH, "auto");
         }
+        else if (port.startsWith("COM")) {
+            logger.info("Connect to port: " + port);
+            fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_PORT, String.valueOf(IFptr.LIBFPTR_PORT_COM));
+            fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_COM_FILE, port);
+            fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_BAUDRATE, String.valueOf(IFptr.LIBFPTR_PORT_BR_115200));
+        }
         else {
             logger.info("Connect to port: " + port);
             fptr.setSingleSetting(IFptr.LIBFPTR_SETTING_PORT, String.valueOf(IFptr.LIBFPTR_PORT_USB));
