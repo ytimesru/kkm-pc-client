@@ -10,6 +10,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class PrintCheckCommandRecord extends AbstractCommandRecord {
 
+    public String checkNum;
     public List<ItemRecord> itemList;
     public List<GuestRecord> guestInfoList;
     public GuestType type;
