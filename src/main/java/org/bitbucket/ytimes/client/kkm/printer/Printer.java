@@ -17,7 +17,9 @@ public interface Printer {
 
     void startShift(ReportCommandRecord record) throws PrinterException;
 
-    void cashIncome(CashIncomeRecord record) throws PrinterException;
+    void cashIncome(CashChangeRecord record) throws PrinterException;
+
+    void cashOutcome(CashChangeRecord record) throws PrinterException;
 
     void copyLastDoc(AbstractCommandRecord record) throws PrinterException;
 

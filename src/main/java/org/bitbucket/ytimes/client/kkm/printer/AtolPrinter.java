@@ -299,7 +299,7 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    synchronized public void cashIncome(CashIncomeRecord record) throws PrinterException {
+    synchronized public void cashIncome(CashChangeRecord record) throws PrinterException {
         loginOperator(record);
         fptr.setParam(IFptr.LIBFPTR_PARAM_SUM, record.sum);
         if (fptr.cashIncome() < 0) {
@@ -310,6 +310,16 @@ public class AtolPrinter implements Printer {
         }
     }
 
+    synchronized public void cashOutcome(CashChangeRecord record) throws PrinterException {
+        loginOperator(record);
+        fptr.setParam(IFptr.LIBFPTR_PARAM_SUM, record.sum);
+        if (fptr.cashOutcome() < 0) {
+            checkError(fptr);
+        }
+        if (!waitDocumentClosed()) {
+            checkError(fptr);
+        }
+    }
 
     synchronized public void copyLastDoc(AbstractCommandRecord record) throws PrinterException {
         loginOperator(record);

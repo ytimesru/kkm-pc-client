@@ -54,8 +54,12 @@ public class TestPrinter implements Printer {
         logger.info("print pred check");
     }
 
-    public void cashIncome(CashIncomeRecord summ) throws PrinterException {
-        logger.info("cash income");
+    public void cashIncome(CashChangeRecord summ) throws PrinterException {
+        logger.info("cash income: " + summ.sum);
+    }
+
+    public void cashOutcome(CashChangeRecord summ) throws PrinterException {
+        logger.info("cash outcome: " + summ.sum);
     }
 
     public void startShift(ReportCommandRecord record) throws PrinterException {

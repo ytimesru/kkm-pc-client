@@ -221,8 +221,12 @@ public class WebServer extends NanoHTTPD {
                     printer.startShift(record);
                 }
                 else if ("cashIncome".equals(action.action)) {
-                    CashIncomeRecord record = parseMessage(action.data, CashIncomeRecord.class);
+                    CashChangeRecord record = parseMessage(action.data, CashChangeRecord.class);
                     printer.cashIncome(record);
+                }
+                else if ("cashOutcome".equals(action.action)) {
+                    CashChangeRecord record = parseMessage(action.data, CashChangeRecord.class);
+                    printer.cashOutcome(record);
                 }
                 else {
                     throw new IllegalArgumentException("Неизвестная команда: " + action.action + ". Вероятно требуется обновить " +
