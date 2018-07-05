@@ -247,7 +247,7 @@ public class EGAISProcessor {
         jaxbMarshaller.marshal(documents, sw);
 
         String xml = sw.toString();
-        sendXMLToEgais(xml, "opt/in/WayBillAct");
+        sendXMLToEgais(xml, "opt/in/WayBillAct_v3");
     }
 
     private void sendXMLToEgais(String xml, String url) throws IOException, EgaisException {
