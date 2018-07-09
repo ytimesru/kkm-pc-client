@@ -10,7 +10,6 @@ public class ConfigRecord {
     public String verificationCode;
 
     // KKM
-
     public String model;
     public String port;
     public String wifiIP;
@@ -23,5 +22,9 @@ public class ConfigRecord {
     public Boolean egaisENABLED;
     public String egaisFSRARID;
     public String egaisUTMAddress;
+
+    //for remote print check
+    public String accountExternalId;
+    public String accountExternalBaseUrl;
 
 }

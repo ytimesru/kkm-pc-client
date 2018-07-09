@@ -261,6 +261,8 @@ public class WebServer extends NanoHTTPD {
             configService.setValue("egaisENABLED", Boolean.TRUE.equals(record.egaisENABLED) ? "true" : "false");
             configService.setValue("egaisFSRARID", record.egaisFSRARID);
             configService.setValue("egaisUTMAddress", record.egaisUTMAddress);
+            configService.setValue("accountExternalId", record.accountExternalId);
+            configService.setValue("accountExternalBaseUrl", record.accountExternalBaseUrl);
             if (record.params != null && record.params.size() > 0) {
                 for (String keys : record.params.keySet()) {
                     configService.setValue(keys, record.params.get(keys));
@@ -338,6 +340,12 @@ public class WebServer extends NanoHTTPD {
             else if (keys.equals("egaisUTMAddress")) {
                 record.egaisUTMAddress = value;
             }
+            else if (keys.equals("accountExternalId")) {
+                record.accountExternalId = value;
+            }
+            else if (keys.equals("accountExternalBaseUrl")) {
+                record.accountExternalBaseUrl = value;
+            }
             else {
                 record.params.put(keys, value);
             }
@@ -372,4 +380,7 @@ public class WebServer extends NanoHTTPD {
         logger.info("Init printer completed");
     }
 
+    public Printer getPrinter() {
+        return printer;
+    }
 }

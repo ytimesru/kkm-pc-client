@@ -1,11 +1,17 @@
 package org.bitbucket.ytimes.client.kkm.services;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.fluent.Content;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
+import org.bitbucket.ytimes.client.kkm.printer.Printer;
+import org.bitbucket.ytimes.client.kkm.record.DeviceModuleCheckRecord;
+import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
+import org.bitbucket.ytimes.client.kkm.record.ServerResult;
 import org.bitbucket.ytimes.client.main.Utils;
+import org.bitbucket.ytimes.client.main.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +32,70 @@ public class CronService {
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private WebServer webServer;
+
+    //every 120 sec
+    @Scheduled(fixedRate = 120000)
+    public void printCheckFromServer() throws Exception {
+        logger.info("Load checks for print");
+        String accountExternalId = configService.getValue("accountExternalId", null);
+        if (StringUtils.isEmpty(accountExternalId)) {
+            return;
+        }
+        String externalBaseUrl = configService.getValue("accountExternalBaseUrl", null);
+        if (StringUtils.isEmpty(externalBaseUrl)) {
+            return;
+        }
+
+        String url = externalBaseUrl + "util/module/check/listForPrint";
+
+        List<NameValuePair> form = Form.form()
+                .add("accountExternalId", accountExternalId)
+                .build();
+
+        Content content = Request.Post(url)
+                .connectTimeout(30000)
+                .bodyForm(form)
+                .execute()
+                .returnContent();
+
+        String s = content.asString();
+        logger.info("Receive check list for print: " + s);
+
+        ServerResult<DeviceModuleCheckRecord> result = Utils.parseMessage(s, new TypeReference<ServerResult<DeviceModuleCheckRecord>>() {});
+        if (!result.isSuccess()) {
+            String error = "Server error";
+            if (result.getErrors() != null && result.getErrors().size() > 0) {
+                error = result.getErrors().get(0).getMessage();
+            }
+            logger.error(error);
+            return;
+        }
+
+        Printer printer = webServer.getPrinter();
+        if (!printer.isConnected()) {
+            printer.connect();
+        }
+
+        for(DeviceModuleCheckRecord checkRecord: result.getRows()) {
+            PrintCheckCommandRecord record = Utils.parseMessage(checkRecord.body, PrintCheckCommandRecord.class);
+            try {
+                printer.printCheck(record);
+
+            }
+            catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                try {
+                    sendPrintCheckErrorToServer(externalBaseUrl, checkRecord.guid, e.getMessage());
+                }
+                catch (Exception e1) {
+                    logger.error(e1.getMessage(), e1);
+                }
+            }
+        }
+    }
 
     //every 15 sec
     @Scheduled(fixedRate = 15000)
@@ -97,6 +167,25 @@ public class CronService {
 
         String s = content.asString();
         return "OK".equals(s);
+    }
+
+    private void sendPrintCheckErrorToServer(String baseUrl, String checkGuid, String errorMessage) throws IOException {
+        logger.info("Send error to server: " + checkGuid + ", " + errorMessage);
+
+        String url = baseUrl + "module/check/updateError";
+
+        List<NameValuePair> form = Form.form()
+                .add("guid", checkGuid)
+                .add("errorMessage", errorMessage)
+                .build();
+        Content content = Request.Post(url)
+                .connectTimeout(30000)
+                .bodyForm(form)
+                .execute()
+                .returnContent();
+
+        String s = content.asString();
+        logger.info("Send error response: " + s);
     }
 
 }
