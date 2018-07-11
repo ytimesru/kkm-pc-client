@@ -5,10 +5,7 @@ import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
-import org.bitbucket.ytimes.client.kkm.printer.AtolPrinter;
-import org.bitbucket.ytimes.client.kkm.printer.Printer;
-import org.bitbucket.ytimes.client.kkm.printer.PrinterException;
-import org.bitbucket.ytimes.client.kkm.printer.TestPrinter;
+import org.bitbucket.ytimes.client.kkm.printer.*;
 import org.bitbucket.ytimes.client.kkm.record.*;
 import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.bitbucket.ytimes.client.screen.record.ScreenInfoRecord;
@@ -368,6 +365,14 @@ public class WebServer extends NanoHTTPD {
         ConfigRecord config = getConfig();
         if ("TEST".equals(config.model)) {
             printer = new TestPrinter();
+        }
+        else if (config.model.startsWith("ATOLENVD")) {
+            AtolPrinter p = new AtolEnvdPrinter(config.model, config.port, config.wifiIP, config.wifiPort);
+            p.setVat(config.vat);
+            p.setOfdChannel(config.ofd);
+
+            printer = p;
+            p.applySettingsAndConnect();
         }
         else if (config.model.startsWith("ATOL")) {
             AtolPrinter p = new AtolPrinter(config.model, config.port, config.wifiIP, config.wifiPort);

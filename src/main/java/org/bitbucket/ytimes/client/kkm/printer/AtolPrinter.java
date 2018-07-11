@@ -19,7 +19,7 @@ import java.util.Map;
 public class AtolPrinter implements Printer {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    private IFptr fptr;
+    protected IFptr fptr;
     private String port;
     private String wifiIP;
     private Integer wifiPort;
@@ -34,6 +34,7 @@ public class AtolPrinter implements Printer {
         this.wifiIP = wifiIP;
         this.wifiPort = wifiPort;
         modelList.put("ATOLAUTO", 500);
+        modelList.put("ATOLENVD", 500);
         modelList.put("ATOL11F", 67);
         modelList.put("ATOL15F", 78);
         modelList.put("ATOL20F", 81);
@@ -146,7 +147,7 @@ public class AtolPrinter implements Printer {
     synchronized public void applySettingsAndConnect() throws PrinterException {
         if (fptr != null) {
             try {
-                finalize();
+                disconnect();
             }
             catch (Throwable e) {
                 logger.error(e.getMessage(), e);
@@ -254,15 +255,17 @@ public class AtolPrinter implements Printer {
     }
 
     public void destroy() throws Throwable {
-        finalize();
+        disconnect();
+    }
+
+    protected void disconnect() throws PrinterException {
+        if (fptr.close() < 0) {
+            checkError(fptr);
+        }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (fptr.close() < 0) {
-            checkError(fptr);
-        }
-
         logger.info("ATOL PRINTER DESTROY");
         fptr.destroy();
     }
@@ -516,7 +519,7 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    private void checkRecord(PrintCheckCommandRecord record) throws PrinterException {
+    protected void checkRecord(PrintCheckCommandRecord record) throws PrinterException {
         if (record.itemList == null || record.itemList.isEmpty()) {
             throw new PrinterException(0, "Список оплаты пустой");
         }
@@ -626,7 +629,7 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    private void checkError(IFptr fptr) throws PrinterException {
+    protected void checkError(IFptr fptr) throws PrinterException {
         checkError(fptr, true);
     }
 
@@ -724,18 +727,18 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    private void printText(String text) throws PrinterException {
+    protected void printText(String text) throws PrinterException {
         printText(text, IFptr.LIBFPTR_ALIGNMENT_CENTER, IFptr.LIBFPTR_TW_WORDS);
     }
 
-    private void printText(String text, int alignment, int wrap) throws PrinterException {
+    protected void printText(String text, int alignment, int wrap) throws PrinterException {
         fptr.setParam(IFptr.LIBFPTR_PARAM_TEXT, text);
         fptr.setParam(IFptr.LIBFPTR_PARAM_ALIGNMENT, alignment);
         fptr.setParam(IFptr.LIBFPTR_PARAM_TEXT_WRAP, wrap);
         fptr.printText();
     }
 
-    private void printBoldText(String text, int alignment, int wrap) throws PrinterException {
+    protected void printBoldText(String text, int alignment, int wrap) throws PrinterException {
         fptr.setParam(IFptr.LIBFPTR_PARAM_TEXT, text);
         fptr.setParam(IFptr.LIBFPTR_PARAM_ALIGNMENT, alignment);
         fptr.setParam(IFptr.LIBFPTR_PARAM_TEXT_WRAP, wrap);
