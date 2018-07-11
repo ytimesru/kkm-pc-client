@@ -39,7 +39,7 @@ public class CronService {
     //every 120 sec
     @Scheduled(fixedRate = 120000)
     public void printCheckFromServer() throws Exception {
-        logger.info("Load checks for print");
+        //logger.info("Load checks for print");
         String accountExternalId = configService.getValue("accountExternalId", null);
         if (StringUtils.isEmpty(accountExternalId)) {
             return;
@@ -47,6 +47,11 @@ public class CronService {
         String externalBaseUrl = configService.getValue("accountExternalBaseUrl", null);
         if (StringUtils.isEmpty(externalBaseUrl)) {
             return;
+        }
+
+        Printer printer = webServer.getPrinter();
+        if (!printer.isConnected()) {
+            printer.connect();
         }
 
         String url = externalBaseUrl + "util/module/check/listForPrint";
@@ -72,11 +77,6 @@ public class CronService {
             }
             logger.error(error);
             return;
-        }
-
-        Printer printer = webServer.getPrinter();
-        if (!printer.isConnected()) {
-            printer.connect();
         }
 
         for(DeviceModuleCheckRecord checkRecord: result.getRows()) {
