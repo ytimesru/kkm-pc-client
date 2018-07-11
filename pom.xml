@@ -28,7 +28,7 @@
         <dependency>
             <groupId>fptr</groupId>
             <artifactId>fptr</artifactId>
-            <version>10.2.0</version>
+            <version>10.3.0</version>
         </dependency>
 
         <dependency>
