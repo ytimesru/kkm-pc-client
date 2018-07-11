@@ -646,7 +646,11 @@ public class AtolPrinter implements Printer {
             // Не удалось проверить состояние документа.
             // Вывести пользователю текст ошибки,
             // попросить устранить неполадку и повторить запрос
-            logger.error(fptr.errorDescription());
+            String errorDescription = fptr.errorDescription();
+            logger.error(errorDescription);
+            if ("Не поддерживается в данной версии".equalsIgnoreCase(errorDescription)) {
+                break;
+            }
 
             try {
                 Thread.sleep(1000);
@@ -671,7 +675,11 @@ public class AtolPrinter implements Printer {
 
         if (!fptr.getParamBool(IFptr.LIBFPTR_PARAM_DOCUMENT_PRINTED)) {
             while (fptr.continuePrint() < 0) {
-                logger.error(fptr.errorDescription());
+                String errorDescription = fptr.errorDescription();
+                logger.error(errorDescription);
+                if ("Не поддерживается в данной версии".equalsIgnoreCase(errorDescription)) {
+                    break;
+                }
 
                 try {
                     Thread.sleep(1000);
