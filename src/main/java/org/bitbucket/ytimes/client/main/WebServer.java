@@ -25,7 +25,7 @@ import java.util.HashMap;
  */
 @Component
 public class WebServer extends NanoHTTPD {
-    public static String version = "2.0.5";
+    public static String version = "2.0.7";
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();
