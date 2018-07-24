@@ -1,6 +1,6 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
-import org.bitbucket.ytimes.client.main.Utils;
+import org.bitbucket.ytimes.client.utils.Utils;
 import org.bitbucket.ytimes.client.kkm.record.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

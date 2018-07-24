@@ -1,7 +1,7 @@
 package org.bitbucket.ytimes.client.kkm.printer;
 
 import org.bitbucket.ytimes.client.kkm.record.*;
-import org.bitbucket.ytimes.client.main.StringUtils;
+import org.bitbucket.ytimes.client.utils.StringUtils;
 import ru.atol.drivers10.fptr.IFptr;
 
 import java.math.BigDecimal;

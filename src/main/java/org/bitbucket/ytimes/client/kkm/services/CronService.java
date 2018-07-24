@@ -10,7 +10,7 @@ import org.bitbucket.ytimes.client.kkm.printer.Printer;
 import org.bitbucket.ytimes.client.kkm.record.DeviceModuleCheckRecord;
 import org.bitbucket.ytimes.client.kkm.record.PrintCheckCommandRecord;
 import org.bitbucket.ytimes.client.kkm.record.ServerResult;
-import org.bitbucket.ytimes.client.main.Utils;
+import org.bitbucket.ytimes.client.utils.Utils;
 import org.bitbucket.ytimes.client.main.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

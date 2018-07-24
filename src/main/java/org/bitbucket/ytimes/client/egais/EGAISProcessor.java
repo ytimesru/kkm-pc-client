@@ -11,7 +11,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
-import org.bitbucket.ytimes.client.main.Utils;
+import org.bitbucket.ytimes.client.utils.Utils;
 import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

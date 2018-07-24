@@ -23,6 +23,12 @@ public class ConfigRecord {
     public String egaisFSRARID;
     public String egaisUTMAddress;
 
+    //Kitchen
+    public String kitchenPrinterModel = "NONE";
+    public String kitchenPrinterIP = "192.168.0.253";
+    public Integer kitchenPrinterPort = 6001;
+    public Integer kitchenPrinterNumber = null;
+
     //for remote print check
     public String accountExternalId;
     public String accountExternalBaseUrl;

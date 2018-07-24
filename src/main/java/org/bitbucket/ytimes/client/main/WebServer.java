@@ -5,10 +5,13 @@ import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
+import org.bitbucket.ytimes.client.kitchen.KitchenPrinter;
+import org.bitbucket.ytimes.client.kitchen.Sam4sKitchenPrinter;
 import org.bitbucket.ytimes.client.kkm.printer.*;
 import org.bitbucket.ytimes.client.kkm.record.*;
 import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.bitbucket.ytimes.client.screen.record.ScreenInfoRecord;
+import org.bitbucket.ytimes.client.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,7 @@ public class WebServer extends NanoHTTPD {
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();
     private Printer printer;
+    private KitchenPrinter kitchenPrinter = null;
     private int port;
 
     @Value("${verificationCode}")
@@ -65,7 +69,7 @@ public class WebServer extends NanoHTTPD {
                 logger.info("  Port: " + port);
             }
 
-            initPrinter();
+            initPrinter(false);
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -176,6 +180,12 @@ public class WebServer extends NanoHTTPD {
                 screenService.setInfo(record);
             }
         }
+        else if (action.action.startsWith("kitchen")) {
+            if (kitchenPrinter != null && "kitchen/print".equals(action.action)) {
+                PrintCheckCommandRecord record = parseMessage(action.data, PrintCheckCommandRecord.class);
+                kitchenPrinter.print(record);
+            }
+        }
         else {
             if (printer == null) {
                 throw new IllegalArgumentException("Не настроен принтер чеков. Проверьте настройки системы в разделе Оборудование");
@@ -258,6 +268,10 @@ public class WebServer extends NanoHTTPD {
             configService.setValue("egaisENABLED", Boolean.TRUE.equals(record.egaisENABLED) ? "true" : "false");
             configService.setValue("egaisFSRARID", record.egaisFSRARID);
             configService.setValue("egaisUTMAddress", record.egaisUTMAddress);
+            configService.setValue("kitchenPrinterModel", record.kitchenPrinterModel);
+            configService.setValue("kitchenPrinterIP", record.kitchenPrinterIP);
+            configService.setValue("kitchenPrinterPort", record.kitchenPrinterPort != null ? record.kitchenPrinterPort + "" : null);
+            configService.setValue("kitchenPrinterNumber", record.kitchenPrinterNumber != null ? record.kitchenPrinterNumber + "" : null);
             configService.setValue("accountExternalId", record.accountExternalId);
             configService.setValue("accountExternalBaseUrl", record.accountExternalBaseUrl);
             if (record.params != null && record.params.size() > 0) {
@@ -269,7 +283,7 @@ public class WebServer extends NanoHTTPD {
             configService.save();
         }
         finally {
-            initPrinter();
+            initPrinter(true);
         }
     }
 
@@ -337,6 +351,24 @@ public class WebServer extends NanoHTTPD {
             else if (keys.equals("egaisUTMAddress")) {
                 record.egaisUTMAddress = value;
             }
+            else if (keys.equals("kitchenPrinterModel")) {
+                record.kitchenPrinterModel = value;
+            }
+            else if (keys.equals("kitchenPrinterIP")) {
+                record.kitchenPrinterIP = value;
+            }
+            else if (keys.equals("kitchenPrinterPort")) {
+                try {
+                    record.kitchenPrinterPort = Integer.parseInt(value);
+                }
+                catch (NumberFormatException e) {}
+            }
+            else if (keys.equals("kitchenPrinterNumber")) {
+                try {
+                    record.kitchenPrinterNumber = Integer.parseInt(value);
+                }
+                catch (NumberFormatException e) {}
+            }
             else if (keys.equals("accountExternalId")) {
                 record.accountExternalId = value;
             }
@@ -351,7 +383,7 @@ public class WebServer extends NanoHTTPD {
         return record;
     }
 
-    private synchronized void initPrinter() throws PrinterException {
+    private synchronized void initPrinter(boolean demoOnConnect) throws PrinterException {
         logger.info("Init printer");
         if (printer != null) {
             logger.info("Destroy prev printer");
@@ -382,6 +414,29 @@ public class WebServer extends NanoHTTPD {
             printer = p;
             p.applySettingsAndConnect();
         }
+        else if (config.model.startsWith("POSPRINTER")) {
+            if (StringUtils.isEmpty(config.wifiIP) || config.wifiPort == null) {
+                throw new PrinterException(0, "POS принтер поддерживает только Wifi подключение");
+            }
+            printer = new POSPrinter(config.wifiIP, config.wifiPort);
+            try {
+                printer.connect();
+                if (demoOnConnect) {
+                    printer.demoReport(null);
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                throw new PrinterException(0, e.getMessage());
+            }
+        }
+
+        if (config.kitchenPrinterModel != null) {
+            if (config.kitchenPrinterModel.equals("POS")) {
+                kitchenPrinter = new Sam4sKitchenPrinter(config.kitchenPrinterIP, config.kitchenPrinterPort, config.kitchenPrinterNumber);
+            }
+        }
+
         logger.info("Init printer completed");
     }
 

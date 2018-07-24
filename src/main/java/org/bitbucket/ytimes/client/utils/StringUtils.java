@@ -1,4 +1,4 @@
-package org.bitbucket.ytimes.client.main;
+package org.bitbucket.ytimes.client.utils;
 
 /**
  * Created by andrey on 26.06.18.
