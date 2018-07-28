@@ -255,9 +255,10 @@ public class WebServer extends NanoHTTPD {
 
     private void checkShopId(Long shopId) throws PrinterException {
         String value = configService.getValue("shopId", null);
-        Long currentShopId = !StringUtils.isEmpty(value) ? Long.parseLong(value) : null;
+        Long currentShopId = StringUtils.isEmpty(value) ? null : Long.parseLong(value);
 
-        if (currentShopId != null && shopId != null && currentShopId != shopId) {
+        if (currentShopId != null && shopId != null && !currentShopId.equals(shopId)) {
+            logger.info("Current shop: " + currentShopId + ", request shop: " + shopId);
             throw new PrinterException(PrinterException.WRONG_SHOP, "Коммуникационный модуль для связи с оборудованием настроен для работы с другим заведением. Доступ запрещен.");
         }
     }
