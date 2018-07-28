@@ -8,6 +8,7 @@ import java.util.Map;
 public class ConfigRecord {
 
     public String verificationCode;
+    public Long shopId;
 
     // KKM
     public String model;

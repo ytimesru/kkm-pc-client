@@ -5,6 +5,8 @@ package org.bitbucket.ytimes.client.kkm.printer;
  */
 public class PrinterException extends Exception {
 
+    public static int WRONG_SHOP = -2;
+
     private int code;
 
     public PrinterException(int code, String message) {

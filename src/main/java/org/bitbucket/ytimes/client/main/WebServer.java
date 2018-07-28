@@ -125,7 +125,8 @@ public class WebServer extends NanoHTTPD {
         if (action == null) {
             throw new IllegalArgumentException("error parse ActionRecord");
         }
-        //checkCode(action.code);
+        checkCode(action.code);
+        checkShopId(action.shopId);
 
         logger.info("Обработка действия: " + action.action);
         if ("config".equals(action.action)) {
@@ -252,6 +253,15 @@ public class WebServer extends NanoHTTPD {
         }
     }
 
+    private void checkShopId(Long shopId) throws PrinterException {
+        String value = configService.getValue("shopId", null);
+        Long currentShopId = !StringUtils.isEmpty(value) ? Long.parseLong(value) : null;
+
+        if (currentShopId != null && shopId != null && currentShopId != shopId) {
+            throw new PrinterException(PrinterException.WRONG_SHOP, "Коммуникационный модуль для связи с оборудованием настроен для работы с другим заведением. Доступ запрещен.");
+        }
+    }
+
     private <T> T parseMessage(String message, Class<T> tClass) throws IOException {
         return mapper.readValue(message, tClass);
     }
@@ -259,6 +269,7 @@ public class WebServer extends NanoHTTPD {
     private void applyConfig(ConfigRecord record) throws IOException, PrinterException {
         try {
             configService.setValue("verificationCode", record.verificationCode);
+            configService.setValue("shopId", record.shopId != null ? record.shopId + "" : null);
             configService.setValue("model", record.model);
             configService.setValue("port", record.port);
             configService.setValue("wifiIP", record.wifiIP);
@@ -305,6 +316,9 @@ public class WebServer extends NanoHTTPD {
             String value = configService.getValue(keys, null);
             if (keys.equals("verificationCode")) {
                 record.verificationCode = configService.getValue("verificationCode", this.verificationCode);
+            }
+            if (keys.equals("shopId")) {
+                record.shopId = StringUtils.isEmpty(value) ? null : Long.parseLong(value);
             }
             else if (keys.equals("model")) {
                 record.model = value;
