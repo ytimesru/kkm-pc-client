@@ -2,6 +2,7 @@ package org.bitbucket.ytimes.client.egais;
 
 import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLTag;
+import javafx.beans.property.ReadOnlySetProperty;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -9,9 +10,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.bitbucket.ytimes.client.egais.records.Response;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
 import org.bitbucket.ytimes.client.egais.records.TicketResult;
+import org.bitbucket.ytimes.client.utils.StringUtils;
 import org.bitbucket.ytimes.client.utils.Utils;
 import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.slf4j.Logger;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Service;
 import ru.fsrar.wegais.actttnsingle_v3.AcceptType;
 import ru.fsrar.wegais.actttnsingle_v3.WayBillActTypeV3;
 import ru.fsrar.wegais.clientref_v2.OrgInfoRusV2;
+import ru.fsrar.wegais.queryparameters.Parameter;
+import ru.fsrar.wegais.queryparameters.QueryParameters;
 import ru.fsrar.wegais.ticket.TicketType;
 import ru.fsrar.wegais.ttninformf2reg.WayBillInformF2RegType;
 import ru.fsrar.wegais.ttnsingle_v3.PositionType;
@@ -50,15 +55,18 @@ public class EGAISProcessor {
     @Autowired
     private ConfigService configService;
 
-    public List<TTNRecord> getAvailableTTNList() throws EgaisException {
+    @Autowired
+    private XMLProcessor xmlProcessor;
+
+    public List<TTNRecord> getAvailableTTNList(String requestId) throws EgaisException, MalformedURLException, JAXBException {
         logger.info("request ttn list");
         try {
-            List<String> incomeDocList = getIncomeDocList();
+            List<String> incomeDocList = StringUtils.isEmpty(requestId) ? getIncomeDocList() : getIncomeDocList(requestId);
 
             Map<String, TTNRecord> ttnList = new LinkedHashMap<String, TTNRecord>();
             for(String link: incomeDocList) {
                 if (link.contains("WayBill")) {
-                    TTNRecord ttn = getTtnRecord(link);
+                    TTNRecord ttn = xmlProcessor.getTtnRecord(link);
                     ttn.wayBillLink = link;
                     ttnList.put(ttn.id, ttn);
                 }
@@ -66,9 +74,9 @@ public class EGAISProcessor {
 
             for(String link: incomeDocList) {
                 if (link.contains("FORM2REGINFO")) {
-                    WayBillInformF2RegType wayBillInform = getWayBillInform(link);
-                    String identity = wayBillInform.getHeader().getIdentity();
-                    ttnList.get(identity).number = wayBillInform.getHeader().getWBRegId();
+                    Map<String, String> res = xmlProcessor.getTTNId(link);
+                    String identity = res.keySet().iterator().next();
+                    ttnList.get(identity).number = res.get(identity);
                     ttnList.get(identity).form2RegInfoLink = link;
                 }
             }
@@ -79,51 +87,38 @@ public class EGAISProcessor {
         }
     }
 
-    private TTNRecord getTtnRecord(String link) throws JAXBException, MalformedURLException {
-        WayBillTypeV3 wayBill = getWayBill(link);
-        TTNRecord ttn = new TTNRecord();
-        ttn.id = wayBill.getIdentity();
-        ttn.date = Utils.toDateString(wayBill.getHeader().getDate().toGregorianCalendar().getTime());
+    public String sendNotAnswerTTNRequest() throws EgaisException, Exception {
+        Parameter parameter = new Parameter();
+        parameter.setName("КОД");
+        parameter.setValue(configService.getValue("egaisFSRARID"));
 
-        OrgInfoRusV2 shipper = wayBill.getHeader().getShipper();
-        if (shipper != null && shipper.getUL() != null) {
-            ttn.supplierFullName = shipper.getUL().getFullName();
-            ttn.supplierShortName = shipper.getUL().getShortName();
-            ttn.supplierINN = shipper.getUL().getINN();
-            ttn.supplierKPP = shipper.getUL().getKPP();
-        }
-        ttn.itemList = new ArrayList();
+        QueryParameters.Parameters parameters = new QueryParameters.Parameters();
+        parameters.getParameter().add(parameter);
 
-        for(PositionType positionType: wayBill.getContent().getPosition()) {
-            TTNPositionRecord record = new TTNPositionRecord();
-            record.alcCode = positionType.getProduct().getAlcCode();
-            record.alcVolume = positionType.getProduct().getAlcVolume().doubleValue();
-            record.shortName = positionType.getProduct().getShortName();
-            record.fullName = positionType.getProduct().getFullName();
-            record.price = positionType.getPrice().doubleValue();
-            record.quantity = positionType.getQuantity().intValue();
-            record.identity = positionType.getIdentity();
-            record.FARegId = positionType.getFARegId();
-            record.F2RegId = positionType.getInformF2().getF2RegId();
-            ttn.itemList.add(record);
-        }
-        return ttn;
+        QueryParameters queryNATTN = new QueryParameters();
+        queryNATTN.getParameters().add(parameters);
+
+        DocBody docBody = new DocBody();
+        docBody.setQueryNATTN(queryNATTN);
+        return sendXML(docBody, "opt/in/QueryNATTN");
     }
 
-    private WayBillTypeV3 getWayBill(String url) throws JAXBException, MalformedURLException {
-        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
+    public Response<List<String>> loadNotAnswerTTNResponse(String requestId) throws EgaisException, MalformedURLException, JAXBException {
+        logger.info("loadNotAnswerTTNResponse: " + requestId);
+        Response<List<String>> res = new Response<List<String>>();
 
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        Documents documents = (Documents) jaxbUnmarshaller.unmarshal(new URL(url));
-        return documents.getDocument().getWayBillV3();
-    }
+        List<String> incomeDocList = getIncomeDocList(requestId);
+        if (incomeDocList.isEmpty()) {
+            res.completed = false;
+            return res;
+        }
 
-    private WayBillInformF2RegType getWayBillInform(String url) throws JAXBException, MalformedURLException {
-        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
-
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        Documents documents = (Documents) jaxbUnmarshaller.unmarshal(new URL(url));
-        return documents.getDocument().getTTNInformF2Reg();
+        for(String docName: incomeDocList) {
+            if (docName.contains("ReplyNATTN")) {
+                res.data = xmlProcessor.getNotAnswerTTNList(docName);
+            }
+        }
+        return res;
     }
 
     private List<String> getIncomeDocList() throws MalformedURLException {
@@ -165,51 +160,57 @@ public class EGAISProcessor {
 
     private String changeURL(String address) {
 //        if (address.equals("http://localhost:8080/opt/out")) {
-//            return "http://static.nyc.local:81/egais/out.xml";
+//            return "http://static.nyc.local:81/egaistest/out.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/2")) {
-//            return "http://static.nyc.local:81/egais/WayBill_v3_2.xml";
+//            return "http://static.nyc.local:81/egaistest/WayBill_v3_2.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/3")) {
-//            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_3.xml";
+//            return "http://static.nyc.local:81/egaistest/TTNHISTORYF2REG_3.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/4")) {
-//            return "http://static.nyc.local:81/egais/FORM2REGINFO_4.xml";
+//            return "http://static.nyc.local:81/egaistest/FORM2REGINFO_4.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/FORM2REGINFO/5")) {
-//            return "http://static.nyc.local:81/egais/FORM2REGINFO_5.xml";
+//            return "http://static.nyc.local:81/egaistest/FORM2REGINFO_5.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/WayBill_v3/6")) {
-//            return "http://static.nyc.local:81/egais/WayBill_v3_6.xml";
+//            return "http://static.nyc.local:81/egaistest/WayBill_v3_6.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/7")) {
-//            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_7.xml";
+//            return "http://static.nyc.local:81/egaistest/TTNHISTORYF2REG_7.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/in/WayBillAct_v3")) {
-//            return "http://static.nyc.local:81/egais/WayBillAct_v3_response.xml";
+//            return "http://static.nyc.local:81/egaistest/WayBillAct_v3_response.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/in/QueryNATTN")) {
+//            return "http://static.nyc.local:81/egaistest/QueryNATTN_response.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/Ticket/215")) {
-//            return "http://static.nyc.local:81/egais/Ticket215.xml";
+//            return "http://static.nyc.local:81/egaistest/Ticket215.xml";
 //        }
 //        if (address.equals("http://localhost:8080/opt/out/Ticket/216")) {
-//            return "http://static.nyc.local:81/egais/Ticket216.xml";
+//            return "http://static.nyc.local:81/egaistest/Ticket216.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/ReplyNATTN/213")) {
+//            return "http://static.nyc.local:81/egaistest/ReplyNATTN.xml";
 //        }
 
         return address;
     }
 
-    public String rejectTTN(TTNRecord record) throws EgaisException {
+    public String rejectTTN(TTNRecord record) throws EgaisException, Exception {
         logger.info("REJECT");
         return sendWayBillAct(record, AcceptType.REJECTED, record.actNumber, null);
     }
 
 
-    public String acceptTTN(TTNRecord record) throws EgaisException {
+    public String acceptTTN(TTNRecord record) throws EgaisException, Exception {
         logger.info("ACCEPT");
         return sendWayBillAct(record, AcceptType.ACCEPTED, record.actNumber, null);
     }
 
-    public String acceptPartialTTN(TTNRecord record) throws EgaisException {
+    public String acceptPartialTTN(TTNRecord record) throws EgaisException, Exception {
         List<ru.fsrar.wegais.actttnsingle_v3.PositionType> types = new ArrayList<ru.fsrar.wegais.actttnsingle_v3.PositionType>();
 
         for(TTNPositionRecord posRecord: record.itemList) {
@@ -223,45 +224,36 @@ public class EGAISProcessor {
         return sendWayBillAct(record, AcceptType.ACCEPTED, record.actNumber, types);
     }
 
-    private String sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber, List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException {
-        try {
-            XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
+    private String sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber,
+                                  List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException, Exception {
+        XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 
-            WayBillActTypeV3.Header header = new WayBillActTypeV3.Header();
-            header.setIsAccept(isAccept);
-            header.setACTNUMBER(actNumber);
-            header.setActDate(curDate);
-            header.setWBRegId(record.number);
-            header.setNote(record.actNote);
+        WayBillActTypeV3.Header header = new WayBillActTypeV3.Header();
+        header.setIsAccept(isAccept);
+        header.setACTNUMBER(actNumber);
+        header.setActDate(curDate);
+        header.setWBRegId(record.number);
+        header.setNote(record.actNote);
 
-            WayBillActTypeV3.Content content = new WayBillActTypeV3.Content();
-            if (positionTypes != null) {
-                content.getPosition().addAll(positionTypes);
-            }
-
-            WayBillActTypeV3 act = new WayBillActTypeV3();
-            act.setHeader(header);
-            act.setContent(content);
-
-            DocBody docBody = new DocBody();
-            docBody.setWayBillActV3(act);
-
-            SenderInfo owner = new SenderInfo();
-            owner.setFSRARID(configService.getValue("egaisFSRARID"));
-
-            return sendXML(docBody, owner);
+        WayBillActTypeV3.Content content = new WayBillActTypeV3.Content();
+        if (positionTypes != null) {
+            content.getPosition().addAll(positionTypes);
         }
-        catch (EgaisException e) {
-            logger.error(e.getMessage(), e);
-            throw e;
-        }
-        catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            throw new EgaisException(e);
-        }
+
+        WayBillActTypeV3 act = new WayBillActTypeV3();
+        act.setHeader(header);
+        act.setContent(content);
+
+        DocBody docBody = new DocBody();
+        docBody.setWayBillActV3(act);
+
+        return sendXML(docBody, "opt/in/WayBillAct_v3");
     }
 
-    private String sendXML(DocBody docBody, SenderInfo owner) throws JAXBException, IOException, EgaisException {
+    private String sendXML(DocBody docBody, String url) throws JAXBException, IOException, EgaisException {
+        SenderInfo owner = new SenderInfo();
+        owner.setFSRARID(configService.getValue("egaisFSRARID"));
+
         Documents documents = new Documents();
         documents.setDocument(docBody);
         documents.setOwner(owner);
@@ -276,7 +268,7 @@ public class EGAISProcessor {
         jaxbMarshaller.marshal(documents, sw);
 
         String xml = sw.toString();
-        return sendXMLToEgais(xml, "opt/in/WayBillAct_v3");
+        return sendXMLToEgais(xml, url);
     }
 
     private String sendXMLToEgais(String xml, String url) throws IOException, EgaisException {
@@ -284,31 +276,34 @@ public class EGAISProcessor {
         logger.info(xml);
 
         url = getUrl(url);
-
-        HttpEntity entity = MultipartEntityBuilder
-                .create()
-                .addTextBody("xml_file", xml)
-                .build();
-
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setEntity(entity);
-
-        HttpClient httpClient = HttpClientBuilder.create().build();
-        HttpResponse response = httpClient.execute(httpPost);
-
-        int status = response.getStatusLine().getStatusCode();
-        String content = EntityUtils.toString(response.getEntity());
-
-
-        logger.info("Return code: " + status);
-        logger.info("Response: " + content);
-
-        if (status != 200) {
-            throw new EgaisException("Отправка в ЕГАИС завершилась с ошибкой: " + status);
+        XMLTag xmlResp = null;
+        if (url.contains("egaistest")) {
+            xmlResp = XMLDoc.from(new URL(url), true);
         }
-        XMLTag xmlResp = XMLDoc.from(content, true);
+        else {
+            HttpEntity entity = MultipartEntityBuilder
+                    .create()
+                    .addTextBody("xml_file", xml)
+                    .build();
 
-        //TODO test XMLTag xmlResp = XMLDoc.from(new URL(url), true);
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setEntity(entity);
+
+            HttpClient httpClient = HttpClientBuilder.create().build();
+            HttpResponse response = httpClient.execute(httpPost);
+
+            int status = response.getStatusLine().getStatusCode();
+            String content = EntityUtils.toString(response.getEntity());
+
+
+            logger.info("Return code: " + status);
+            logger.info("Response: " + content);
+
+            if (status != 200) {
+                throw new EgaisException("Отправка в ЕГАИС завершилась с ошибкой: " + status);
+            }
+            xmlResp = XMLDoc.from(content, true);
+        }
 
         for(XMLTag tag: xmlResp.getChilds()) {
             if ("url".equals(tag.getCurrentTagName())) {
@@ -319,10 +314,16 @@ public class EGAISProcessor {
         throw new EgaisException("Неизвестный формат ответа от ЕГАИС");
     }
 
-    public TicketResult getTTNActResult(String requestGuid) throws EgaisException {
+    public Response<TicketResult> getTTNActResult(String requestGuid) throws EgaisException {
         logger.info("request ttn act result");
         try {
+            Response<TicketResult> resp = new Response<TicketResult>();
             List<String> incomeDocList = getIncomeDocList(requestGuid);
+            if (incomeDocList.isEmpty()) {
+                resp.completed = false;
+                return resp;
+            }
+
             for(String url: incomeDocList) {
                 if (url.contains("Ticket")) {
                     TicketType ticket = getTicket(url);
@@ -331,21 +332,27 @@ public class EGAISProcessor {
                         res.docType = ticket.getDocType();
                         res.resultStatus = ticket.getResult().getConclusion().value();
                         res.resultComment = ticket.getResult().getComments();
-                        return res;
+                        resp.data = res;
                     }
                 }
             }
 
-            return null;
+            return resp;
         } catch (Exception e) {
             throw new EgaisException(e);
         }
     }
 
-    public TicketResult getTTNResult(String requestGuid) throws EgaisException {
+    public Response<TicketResult> getTTNResult(String requestGuid) throws EgaisException {
         logger.info("request ttn result");
         try {
+            Response<TicketResult> resp = new Response<TicketResult>();
             List<String> incomeDocList = getIncomeDocList(requestGuid);
+            if (incomeDocList.isEmpty()) {
+                resp.completed = false;
+                return resp;
+            }
+
             for(String url: incomeDocList) {
                 if (url.contains("Ticket")) {
                     TicketType ticket = getTicket(url);
@@ -354,12 +361,12 @@ public class EGAISProcessor {
                         res.docType = ticket.getDocType();
                         res.resultStatus = ticket.getOperationResult().getOperationResult().value();
                         res.resultComment = ticket.getOperationResult().getOperationComment();
-                        return res;
+                        resp.data = res;
                     }
                 }
             }
 
-            return null;
+            return resp;
         } catch (Exception e) {
             throw new EgaisException(e);
         }

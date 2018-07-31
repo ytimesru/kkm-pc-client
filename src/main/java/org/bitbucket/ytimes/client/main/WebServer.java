@@ -156,28 +156,34 @@ public class WebServer extends NanoHTTPD {
             if (!"true".equals(egaisEnabled)) {
                 throw new IllegalArgumentException("Поддержка ЕГАИС в коммуникационном модуле выключена");
             }
-            if ("egais/ttnincomelist".equals(action.action)) {
-                return egaisProcessor.getAvailableTTNList();
+            try {
+                if ("egais/ttnincomelist".equals(action.action)) {
+                    String requestGuid = action.data;
+                    return egaisProcessor.getAvailableTTNList(requestGuid);
+                } else if ("egais/ttnnotanswerrequest".equals(action.action)) {
+                    return egaisProcessor.sendNotAnswerTTNRequest();
+                } else if ("egais/ttnnotanswerresponse".equals(action.action)) {
+                    String requestGuid = action.data;
+                    return egaisProcessor.loadNotAnswerTTNResponse(requestGuid);
+                } else if ("egais/ttnactresult".equals(action.action)) {
+                    String requestGuid = action.data;
+                    return egaisProcessor.getTTNActResult(requestGuid);
+                } else if ("egais/ttnresult".equals(action.action)) {
+                    String requestGuid = action.data;
+                    return egaisProcessor.getTTNResult(requestGuid);
+                } else if ("egais/ttnreject".equals(action.action)) {
+                    TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                    return egaisProcessor.rejectTTN(record);
+                } else if ("egais/ttnaccept".equals(action.action)) {
+                    TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                    return egaisProcessor.acceptTTN(record);
+                } else if ("egais/ttnacceptpartial".equals(action.action)) {
+                    TTNRecord record = parseMessage(action.data, TTNRecord.class);
+                    return egaisProcessor.acceptPartialTTN(record);
+                }
             }
-            else if ("egais/ttnactresult".equals(action.action)) {
-                String requestGuid = action.data;
-                return egaisProcessor.getTTNActResult(requestGuid);
-            }
-            else if ("egais/ttnresult".equals(action.action)) {
-                String requestGuid = action.data;
-                return egaisProcessor.getTTNResult(requestGuid);
-            }
-            else if ("egais/ttnreject".equals(action.action)) {
-                TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                return egaisProcessor.rejectTTN(record);
-            }
-            else if ("egais/ttnaccept".equals(action.action)) {
-                TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                return egaisProcessor.acceptTTN(record);
-            }
-            else if ("egais/ttnacceptpartial".equals(action.action)) {
-                TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                return egaisProcessor.acceptPartialTTN(record);
+            catch (Exception e) {
+                throw new EgaisException(e.getMessage(), e);
             }
         }
         else if (action.action.startsWith("screen")) {
