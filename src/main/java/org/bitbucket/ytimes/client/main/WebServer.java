@@ -156,20 +156,28 @@ public class WebServer extends NanoHTTPD {
             if (!"true".equals(egaisEnabled)) {
                 throw new IllegalArgumentException("Поддержка ЕГАИС в коммуникационном модуле выключена");
             }
-            if ("egais/ttnlist".equals(action.action)) {
+            if ("egais/ttnincomelist".equals(action.action)) {
                 return egaisProcessor.getAvailableTTNList();
+            }
+            else if ("egais/ttnactresult".equals(action.action)) {
+                String requestGuid = action.data;
+                return egaisProcessor.getTTNActResult(requestGuid);
+            }
+            else if ("egais/ttnresult".equals(action.action)) {
+                String requestGuid = action.data;
+                return egaisProcessor.getTTNResult(requestGuid);
             }
             else if ("egais/ttnreject".equals(action.action)) {
                 TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                egaisProcessor.rejectTTN(record);
+                return egaisProcessor.rejectTTN(record);
             }
             else if ("egais/ttnaccept".equals(action.action)) {
                 TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                egaisProcessor.acceptTTN(record);
+                return egaisProcessor.acceptTTN(record);
             }
             else if ("egais/ttnacceptpartial".equals(action.action)) {
                 TTNRecord record = parseMessage(action.data, TTNRecord.class);
-                egaisProcessor.acceptPartialTTN(record);
+                return egaisProcessor.acceptPartialTTN(record);
             }
         }
         else if (action.action.startsWith("screen")) {

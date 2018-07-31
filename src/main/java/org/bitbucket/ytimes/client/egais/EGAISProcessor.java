@@ -11,6 +11,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
+import org.bitbucket.ytimes.client.egais.records.TicketResult;
 import org.bitbucket.ytimes.client.utils.Utils;
 import org.bitbucket.ytimes.client.kkm.services.ConfigService;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import ru.fsrar.wegais.actttnsingle_v3.AcceptType;
 import ru.fsrar.wegais.actttnsingle_v3.WayBillActTypeV3;
 import ru.fsrar.wegais.clientref_v2.OrgInfoRusV2;
+import ru.fsrar.wegais.ticket.TicketType;
 import ru.fsrar.wegais.ttninformf2reg.WayBillInformF2RegType;
 import ru.fsrar.wegais.ttnsingle_v3.PositionType;
 import ru.fsrar.wegais.ttnsingle_v3.WayBillTypeV3;
@@ -138,6 +140,23 @@ public class EGAISProcessor {
         return res;
     }
 
+    private List<String> getIncomeDocList(String requestId) throws MalformedURLException {
+        List<String> res = new ArrayList<String>();
+        URL docList = new URL(getUrl("opt/out"));
+        XMLTag xml = XMLDoc.from(docList, true);
+        for(XMLTag tag: xml.getChilds()) {
+            if (!tag.hasAttribute("replyId")) {
+                continue;
+            }
+            String replyId = tag.getAttribute("replyId");
+            if (requestId.equals(replyId)) {
+                String addr = changeURL(tag.getInnerText());
+                res.add(addr);
+            }
+        }
+        return res;
+    }
+
     private String getUrl(String address) {
         String url = configService.getValue("egaisUTMAddress");
         address = url + address;
@@ -166,21 +185,31 @@ public class EGAISProcessor {
 //        if (address.equals("http://localhost:8080/opt/out/TTNHISTORYF2REG/7")) {
 //            return "http://static.nyc.local:81/egais/TTNHISTORYF2REG_7.xml";
 //        }
+//        if (address.equals("http://localhost:8080/opt/in/WayBillAct_v3")) {
+//            return "http://static.nyc.local:81/egais/WayBillAct_v3_response.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/Ticket/215")) {
+//            return "http://static.nyc.local:81/egais/Ticket215.xml";
+//        }
+//        if (address.equals("http://localhost:8080/opt/out/Ticket/216")) {
+//            return "http://static.nyc.local:81/egais/Ticket216.xml";
+//        }
+
         return address;
     }
 
-    public void rejectTTN(TTNRecord record) throws EgaisException {
-        sendWayBillAct(record, AcceptType.REJECTED, "1-1", null);
+    public String rejectTTN(TTNRecord record) throws EgaisException {
         logger.info("REJECT");
+        return sendWayBillAct(record, AcceptType.REJECTED, record.actNumber, null);
     }
 
 
-    public void acceptTTN(TTNRecord record) throws EgaisException {
-        sendWayBillAct(record, AcceptType.ACCEPTED, "1-1", null);
+    public String acceptTTN(TTNRecord record) throws EgaisException {
         logger.info("ACCEPT");
+        return sendWayBillAct(record, AcceptType.ACCEPTED, record.actNumber, null);
     }
 
-    public void acceptPartialTTN(TTNRecord record) throws EgaisException {
+    public String acceptPartialTTN(TTNRecord record) throws EgaisException {
         List<ru.fsrar.wegais.actttnsingle_v3.PositionType> types = new ArrayList<ru.fsrar.wegais.actttnsingle_v3.PositionType>();
 
         for(TTNPositionRecord posRecord: record.itemList) {
@@ -190,11 +219,11 @@ public class EGAISProcessor {
             position.setRealQuantity(new BigDecimal(posRecord.actualQuantity));
             types.add(position);
         }
-        sendWayBillAct(record, AcceptType.ACCEPTED, "1-1", types);
         logger.info("ACCEPTPARTIAL");
+        return sendWayBillAct(record, AcceptType.ACCEPTED, record.actNumber, types);
     }
 
-    private void sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber, List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException {
+    private String sendWayBillAct(TTNRecord record, ru.fsrar.wegais.actttnsingle_v3.AcceptType isAccept, String actNumber, List<ru.fsrar.wegais.actttnsingle_v3.PositionType> positionTypes) throws EgaisException {
         try {
             XMLGregorianCalendar curDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 
@@ -220,7 +249,7 @@ public class EGAISProcessor {
             SenderInfo owner = new SenderInfo();
             owner.setFSRARID(configService.getValue("egaisFSRARID"));
 
-            sendXML(docBody, owner);
+            return sendXML(docBody, owner);
         }
         catch (EgaisException e) {
             logger.error(e.getMessage(), e);
@@ -232,7 +261,7 @@ public class EGAISProcessor {
         }
     }
 
-    private void sendXML(DocBody docBody, SenderInfo owner) throws JAXBException, IOException, EgaisException {
+    private String sendXML(DocBody docBody, SenderInfo owner) throws JAXBException, IOException, EgaisException {
         Documents documents = new Documents();
         documents.setDocument(docBody);
         documents.setOwner(owner);
@@ -247,10 +276,10 @@ public class EGAISProcessor {
         jaxbMarshaller.marshal(documents, sw);
 
         String xml = sw.toString();
-        sendXMLToEgais(xml, "opt/in/WayBillAct_v3");
+        return sendXMLToEgais(xml, "opt/in/WayBillAct_v3");
     }
 
-    private void sendXMLToEgais(String xml, String url) throws IOException, EgaisException {
+    private String sendXMLToEgais(String xml, String url) throws IOException, EgaisException {
         logger.info("Send xml to: " + url);
         logger.info(xml);
 
@@ -270,11 +299,78 @@ public class EGAISProcessor {
         int status = response.getStatusLine().getStatusCode();
         String content = EntityUtils.toString(response.getEntity());
 
+
         logger.info("Return code: " + status);
         logger.info("Response: " + content);
+
         if (status != 200) {
             throw new EgaisException("Отправка в ЕГАИС завершилась с ошибкой: " + status);
         }
+        XMLTag xmlResp = XMLDoc.from(content, true);
+
+        //TODO test XMLTag xmlResp = XMLDoc.from(new URL(url), true);
+
+        for(XMLTag tag: xmlResp.getChilds()) {
+            if ("url".equals(tag.getCurrentTagName())) {
+                return tag.getInnerText();
+            }
+        }
+
+        throw new EgaisException("Неизвестный формат ответа от ЕГАИС");
     }
+
+    public TicketResult getTTNActResult(String requestGuid) throws EgaisException {
+        logger.info("request ttn act result");
+        try {
+            List<String> incomeDocList = getIncomeDocList(requestGuid);
+            for(String url: incomeDocList) {
+                if (url.contains("Ticket")) {
+                    TicketType ticket = getTicket(url);
+                    if ("WayBillAct_v3".equals(ticket.getDocType())) {
+                        TicketResult res = new TicketResult();
+                        res.docType = ticket.getDocType();
+                        res.resultStatus = ticket.getResult().getConclusion().value();
+                        res.resultComment = ticket.getResult().getComments();
+                        return res;
+                    }
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            throw new EgaisException(e);
+        }
+    }
+
+    public TicketResult getTTNResult(String requestGuid) throws EgaisException {
+        logger.info("request ttn result");
+        try {
+            List<String> incomeDocList = getIncomeDocList(requestGuid);
+            for(String url: incomeDocList) {
+                if (url.contains("Ticket")) {
+                    TicketType ticket = getTicket(url);
+                    if ("WAYBILL".equals(ticket.getDocType())) {
+                        TicketResult res = new TicketResult();
+                        res.docType = ticket.getDocType();
+                        res.resultStatus = ticket.getOperationResult().getOperationResult().value();
+                        res.resultComment = ticket.getOperationResult().getOperationComment();
+                        return res;
+                    }
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            throw new EgaisException(e);
+        }
+    }
+
+    private TicketType getTicket(String url) throws JAXBException, MalformedURLException {
+        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
+        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+        Documents documents = (Documents) jaxbUnmarshaller.unmarshal(new URL(url));
+        return documents.getDocument().getTicket();
+    }
+
 
 }

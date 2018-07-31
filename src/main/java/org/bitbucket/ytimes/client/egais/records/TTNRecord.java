@@ -20,5 +20,6 @@ public class TTNRecord {
     public String form2RegInfoLink;
 
     public String actNote;
+    public String actNumber;
 
 }
