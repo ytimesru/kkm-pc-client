@@ -62,29 +62,32 @@ public class EGAISProcessor {
         logger.info("request ttn list");
         try {
             List<String> incomeDocList = StringUtils.isEmpty(requestId) ? getIncomeDocList() : getIncomeDocList(requestId);
-
-            Map<String, TTNRecord> ttnList = new LinkedHashMap<String, TTNRecord>();
-            for(String link: incomeDocList) {
-                if (link.contains("WayBill")) {
-                    TTNRecord ttn = xmlProcessor.getTtnRecord(link);
-                    ttn.wayBillLink = link;
-                    ttnList.put(ttn.id, ttn);
-                }
-            }
-
-            for(String link: incomeDocList) {
-                if (link.contains("FORM2REGINFO")) {
-                    Map<String, String> res = xmlProcessor.getTTNId(link);
-                    String identity = res.keySet().iterator().next();
-                    ttnList.get(identity).number = res.get(identity);
-                    ttnList.get(identity).form2RegInfoLink = link;
-                }
-            }
-            return new ArrayList<TTNRecord>(ttnList.values());
+            return getTTNListByUrlList(incomeDocList);
         }
         catch (Exception e) {
             throw new EgaisException(e);
         }
+    }
+
+    private List<TTNRecord> getTTNListByUrlList(List<String> incomeDocList) throws EgaisException, JAXBException, MalformedURLException {
+        Map<String, TTNRecord> ttnList = new LinkedHashMap<String, TTNRecord>();
+        for(String link: incomeDocList) {
+            if (link.contains("WayBill")) {
+                TTNRecord ttn = xmlProcessor.getTtnRecord(link);
+                ttn.wayBillLink = link;
+                ttnList.put(ttn.id, ttn);
+            }
+        }
+
+        for(String link: incomeDocList) {
+            if (link.contains("FORM2REGINFO")) {
+                Map<String, String> res = xmlProcessor.getTTNId(link);
+                String identity = res.keySet().iterator().next();
+                ttnList.get(identity).number = res.get(identity);
+                ttnList.get(identity).form2RegInfoLink = link;
+            }
+        }
+        return new ArrayList<TTNRecord>(ttnList.values());
     }
 
     public String sendNotAnswerTTNRequest() throws EgaisException, Exception {
@@ -118,6 +121,36 @@ public class EGAISProcessor {
                 res.data = xmlProcessor.getNotAnswerTTNList(docName);
             }
         }
+        return res;
+    }
+
+    public String requestTtnById(String ttnId) throws EgaisException, Exception {
+        Parameter parameter = new Parameter();
+        parameter.setName("WBREGID");
+        parameter.setValue(ttnId);
+
+        QueryParameters.Parameters parameters = new QueryParameters.Parameters();
+        parameters.getParameter().add(parameter);
+
+        QueryParameters query = new QueryParameters();
+        query.getParameters().add(parameters);
+
+        DocBody docBody = new DocBody();
+        docBody.setQueryResendDoc(query);
+        return sendXML(docBody, "opt/in/QueryResendDoc");
+    }
+
+    public Response<List<TTNRecord>> ttnByIdResponse(String requestId) throws EgaisException, MalformedURLException, JAXBException {
+        logger.info("loadNotAnswerTTNResponse: " + requestId);
+        Response<List<TTNRecord>> res = new Response<List<TTNRecord>>();
+
+        List<String> incomeDocList = getIncomeDocList(requestId);
+        if (incomeDocList.isEmpty()) {
+            res.completed = false;
+            return res;
+        }
+
+        res.data = getTTNListByUrlList(incomeDocList);
         return res;
     }
 

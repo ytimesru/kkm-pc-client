@@ -165,6 +165,12 @@ public class WebServer extends NanoHTTPD {
                 } else if ("egais/ttnnotanswerresponse".equals(action.action)) {
                     String requestGuid = action.data;
                     return egaisProcessor.loadNotAnswerTTNResponse(requestGuid);
+                } else if ("egais/ttnbyid".equals(action.action)) {
+                    String ttnId = action.data;
+                    return egaisProcessor.requestTtnById(ttnId);
+                } else if ("egais/ttnbyidresponse".equals(action.action)) {
+                    String requestGuid = action.data;
+                    return egaisProcessor.ttnByIdResponse(requestGuid);
                 } else if ("egais/ttnactresult".equals(action.action)) {
                     String requestGuid = action.data;
                     return egaisProcessor.getTTNActResult(requestGuid);
