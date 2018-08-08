@@ -264,12 +264,6 @@ public class AtolPrinter implements Printer {
         }
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        logger.info("ATOL PRINTER DESTROY");
-        fptr.destroy();
-    }
-
     synchronized public void reportX(ReportCommandRecord record) throws PrinterException {
         loginOperator(record);
         fptr.setParam(IFptr.LIBFPTR_PARAM_REPORT_TYPE, IFptr.LIBFPTR_RT_X);
@@ -514,6 +508,7 @@ public class AtolPrinter implements Printer {
             }
         }
         catch (PrinterException e) {
+            logger.error(e.getMessage(), e);
             cancelCheck();
             throw e;
         }
@@ -596,7 +591,9 @@ public class AtolPrinter implements Printer {
     private void payment(double sum, int type) throws PrinterException {
         fptr.setParam(IFptr.LIBFPTR_PARAM_PAYMENT_TYPE, type);
         fptr.setParam(IFptr.LIBFPTR_PARAM_PAYMENT_SUM, sum);
-        fptr.payment();
+        if (fptr.payment() < 0) {
+            checkError(fptr);
+        }
     }
 
     private void openCheck(PrintCheckCommandRecord record, int type) throws PrinterException {
