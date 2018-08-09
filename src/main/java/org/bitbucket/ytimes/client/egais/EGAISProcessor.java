@@ -60,13 +60,8 @@ public class EGAISProcessor {
 
     public List<TTNRecord> getAvailableTTNList(String requestId) throws EgaisException, MalformedURLException, JAXBException {
         logger.info("request ttn list");
-        try {
-            List<String> incomeDocList = StringUtils.isEmpty(requestId) ? getIncomeDocList() : getIncomeDocList(requestId);
-            return getTTNListByUrlList(incomeDocList);
-        }
-        catch (Exception e) {
-            throw new EgaisException(e);
-        }
+        List<String> incomeDocList = StringUtils.isEmpty(requestId) ? getIncomeDocList() : getIncomeDocList(requestId);
+        return getTTNListByUrlList(incomeDocList);
     }
 
     private List<TTNRecord> getTTNListByUrlList(List<String> incomeDocList) throws EgaisException, JAXBException, MalformedURLException {

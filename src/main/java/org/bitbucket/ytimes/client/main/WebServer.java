@@ -1,6 +1,7 @@
 package org.bitbucket.ytimes.client.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mycila.xmltool.XMLDocumentException;
 import fi.iki.elonen.NanoHTTPD;
 import org.bitbucket.ytimes.client.egais.EGAISProcessor;
 import org.bitbucket.ytimes.client.egais.EgaisException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -186,6 +188,14 @@ public class WebServer extends NanoHTTPD {
                 } else if ("egais/ttnacceptpartial".equals(action.action)) {
                     TTNRecord record = parseMessage(action.data, TTNRecord.class);
                     return egaisProcessor.acceptPartialTTN(record);
+                }
+            }
+            catch (XMLDocumentException e) {
+                if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
+                    throw new EgaisException("Не запущен УТМ (либо УТМ неверной версии)", e);
+                }
+                else {
+                    throw new EgaisException(e.getMessage(), e);
                 }
             }
             catch (Exception e) {
