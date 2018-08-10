@@ -30,7 +30,7 @@ import java.util.HashMap;
  */
 @Component
 public class WebServer extends NanoHTTPD {
-    public static String version = "2.0.7";
+    public static String version = "2.0.8";
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private ObjectMapper mapper = new ObjectMapper();

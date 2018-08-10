@@ -9,7 +9,7 @@ public class TTNRecord {
 
     public String id;
     public String date;
-    public String number;
+    public String number;   //regId
     public String supplierFullName;
     public String supplierShortName;
     public String supplierINN;

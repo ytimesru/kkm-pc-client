@@ -1,8 +1,11 @@
 package org.bitbucket.ytimes.client.egais;
 
+import org.apache.commons.io.IOUtils;
 import org.bitbucket.ytimes.client.egais.records.TTNPositionRecord;
 import org.bitbucket.ytimes.client.egais.records.TTNRecord;
 import org.bitbucket.ytimes.client.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import ru.fsrar.wegais.clientref_v2.OrgInfoRusV2;
 import ru.fsrar.wegais.replynoanswerttn.NoAnswerType;
@@ -15,6 +18,9 @@ import ru.fsrar.wegais.wb_doc_single_01.Documents;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,8 +30,9 @@ import java.util.Map;
 
 @Component
 public class XMLProcessor {
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TTNRecord getTtnRecord(String link) throws EgaisException, JAXBException, MalformedURLException {
+    public TTNRecord getTtnRecord(String link) throws EgaisException, JAXBException, IOException {
         DocBody docBody = getDocBody(link);
         if (docBody.getWayBillV3() == null) {
             throw new EgaisException("Неверный формат ответа ЕГАИС (WayBillV3)");
@@ -61,7 +68,7 @@ public class XMLProcessor {
         return ttn;
     }
 
-    public List<String> getNotAnswerTTNList(String url) throws EgaisException, JAXBException, MalformedURLException {
+    public List<String> getNotAnswerTTNList(String url) throws EgaisException, JAXBException, MalformedURLException, IOException {
         DocBody docBody = getDocBody(url);
         if (docBody.getReplyNoAnswerTTN() == null) {
             throw new EgaisException("Неверный формат ответа ЕГАИС (ReplyNoAnswerTTN)");
@@ -74,15 +81,23 @@ public class XMLProcessor {
         return result;
     }
 
-    private DocBody getDocBody(String url) throws JAXBException, MalformedURLException {
-        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
+    private String readUrl(String url) throws IOException{
+        String xml = IOUtils.toString(new URL(url), "UTF-8");
+        logger.info("Load XML: " + url);
+        logger.info(xml);
+        return xml;
+    }
 
+    private DocBody getDocBody(String url) throws JAXBException, IOException {
+        String buffer = readUrl(url);
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(Documents.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        Documents documents = (Documents) jaxbUnmarshaller.unmarshal(new URL(url));
+        Documents documents = (Documents) jaxbUnmarshaller.unmarshal(new StringReader(buffer));
         return documents.getDocument();
     }
 
-    public Map<String, String> getTTNId(String url) throws EgaisException, JAXBException, MalformedURLException {
+    public Map<String, String> getTTNId(String url) throws EgaisException, JAXBException, IOException {
         DocBody docBody = getDocBody(url);
         if (docBody.getTTNInformF2Reg() == null) {
             throw new EgaisException("Неверный формат ответа ЕГАИС (TTNInformF2Reg)");

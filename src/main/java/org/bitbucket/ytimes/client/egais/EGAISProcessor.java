@@ -58,13 +58,13 @@ public class EGAISProcessor {
     @Autowired
     private XMLProcessor xmlProcessor;
 
-    public List<TTNRecord> getAvailableTTNList(String requestId) throws EgaisException, MalformedURLException, JAXBException {
+    public List<TTNRecord> getAvailableTTNList(String requestId) throws EgaisException, IOException, JAXBException {
         logger.info("request ttn list");
         List<String> incomeDocList = StringUtils.isEmpty(requestId) ? getIncomeDocList() : getIncomeDocList(requestId);
         return getTTNListByUrlList(incomeDocList);
     }
 
-    private List<TTNRecord> getTTNListByUrlList(List<String> incomeDocList) throws EgaisException, JAXBException, MalformedURLException {
+    private List<TTNRecord> getTTNListByUrlList(List<String> incomeDocList) throws EgaisException, JAXBException, IOException {
         Map<String, TTNRecord> ttnList = new LinkedHashMap<String, TTNRecord>();
         for(String link: incomeDocList) {
             if (link.contains("WayBill")) {
@@ -101,7 +101,7 @@ public class EGAISProcessor {
         return sendXML(docBody, "opt/in/QueryNATTN");
     }
 
-    public Response<List<String>> loadNotAnswerTTNResponse(String requestId) throws EgaisException, MalformedURLException, JAXBException {
+    public Response<List<String>> loadNotAnswerTTNResponse(String requestId) throws EgaisException, IOException, JAXBException {
         logger.info("loadNotAnswerTTNResponse: " + requestId);
         Response<List<String>> res = new Response<List<String>>();
 
@@ -135,7 +135,7 @@ public class EGAISProcessor {
         return sendXML(docBody, "opt/in/QueryResendDoc");
     }
 
-    public Response<List<TTNRecord>> ttnByIdResponse(String requestId) throws EgaisException, MalformedURLException, JAXBException {
+    public Response<List<TTNRecord>> ttnByIdResponse(String requestId) throws EgaisException, IOException, JAXBException {
         logger.info("loadNotAnswerTTNResponse: " + requestId);
         Response<List<TTNRecord>> res = new Response<List<TTNRecord>>();
 
@@ -328,6 +328,9 @@ public class EGAISProcessor {
             logger.info("Response: " + content);
 
             if (status != 200) {
+                if (status == 404) {
+                    throw new EgaisException("УТМ не запущен, запустите УТМ");
+                }
                 throw new EgaisException("Отправка в ЕГАИС завершилась с ошибкой: " + status);
             }
             xmlResp = XMLDoc.from(content, true);
