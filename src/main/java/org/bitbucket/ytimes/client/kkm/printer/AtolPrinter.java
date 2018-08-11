@@ -35,6 +35,7 @@ public class AtolPrinter implements Printer {
         this.wifiPort = wifiPort;
         modelList.put("ATOLAUTO", 500);
         modelList.put("ATOLENVD", 500);
+        modelList.put("ATOLEX", 500);
         modelList.put("ATOL11F", 67);
         modelList.put("ATOL15F", 78);
         modelList.put("ATOL20F", 81);

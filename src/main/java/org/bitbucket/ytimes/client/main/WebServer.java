@@ -451,6 +451,14 @@ public class WebServer extends NanoHTTPD {
             printer = p;
             p.applySettingsAndConnect();
         }
+        else if (config.model.startsWith("ATOLEX")) {
+            AtolPrinter p = new AtolPrinterEx(config.model, config.port, config.wifiIP, config.wifiPort);
+            p.setVat(config.vat);
+            p.setOfdChannel(config.ofd);
+
+            printer = p;
+            p.applySettingsAndConnect();
+        }
         else if (config.model.startsWith("ATOL")) {
             AtolPrinter p = new AtolPrinter(config.model, config.port, config.wifiIP, config.wifiPort);
             p.setVat(config.vat);
